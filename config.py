@@ -10,9 +10,11 @@ import math
 
 
 logger = logging.getLogger('pfp-competition')
+logging.basicConfig(level=logging.INFO)
 
 
 CONST_SQRT2 = math.sqrt(2)
 
 DATA_PATH_ROOT = 'g:\\datasets\\kaggle\\osic-pulmonary-fibrosis-progression'
 
+logger.info('testing info logger...')
