@@ -46,6 +46,14 @@ class Baseline:
         result = evaluate_on_testset(output)
         print('average result <laplace log-likelihood>: %s' % result)
 
+    @staticmethod
+    def _baseline_quantile_regression():
+        output = []
+        for row in pd.read_csv('output/submission-quantile-regression.csv').values:
+            output.append((row[0], row[1], row[2]))
+        result = evaluate_on_testset(output)
+        print('average result <laplace log-likelihood>: %s' % result)
+
     def _baseline_xgboost(self):
         pass
 
@@ -54,6 +62,7 @@ class Baseline:
 
     def run(self):
         self._baseline_average()
+        self._baseline_quantile_regression()
 
 
 if __name__ == '__main__':

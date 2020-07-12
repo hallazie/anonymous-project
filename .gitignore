@@ -2,4 +2,6 @@
 /data/*
 /model/*
 /output/*
+/.ipynb_checkpoints/*
 *.pyc
+*.ipynb

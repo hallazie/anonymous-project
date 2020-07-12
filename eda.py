@@ -107,6 +107,7 @@ class EDA:
             print('%s saved: %s, %s, %s' % (uid, str(week_[:2]), str(fvc_[:2]), str(percent_[:2])))
 
     def run(self):
+        self._visualize_all_sequence()
         self._plot_all_sequence()
 
 
