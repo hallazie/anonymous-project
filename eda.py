@@ -7,7 +7,7 @@
 
 from config import logger, DATA_PATH_ROOT
 from utils.image import normalize_image
-
+from utils.common import normalize_vector
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -75,8 +75,39 @@ class EDA:
             except Exception as e:
                 logger.error('%s failed with other error: %s' % (f, e))
 
+    @staticmethod
+    def _plot_all_sequence():
+        df = pd.read_csv('data/train.csv')
+        header_idx = {k: i for i, k in enumerate(df.columns)}
+        plots = {}
+        for row in df.values:
+            uid = row[header_idx['Patient']]
+            week = row[header_idx['Weeks']]
+            fvc = row[header_idx['FVC']]
+            percent = row[header_idx['Percent']]
+            if uid not in plots:
+                plots[uid] = {'week': [], 'fvc': [], 'percent': []}
+            plots[uid]['week'].append(week)
+            plots[uid]['fvc'].append(fvc)
+            plots[uid]['percent'].append(percent)
+        for uid in plots:
+            fig = plt.figure()
+            week_ = normalize_vector(plots[uid]['week'])
+            fvc_ = normalize_vector(plots[uid]['fvc'], min_=0)
+            percent_ = [x / 100. for x in plots[uid]['percent']]
+            percent_norm = normalize_vector(plots[uid]['percent'])
+            idx_ = [i for i in range(len(week_))]
+            plt.plot(idx_, week_, label='week')
+            plt.plot(idx_, fvc_, label='fvc')
+            plt.plot(idx_, percent_, label='percent')
+            plt.plot(idx_, percent_norm, label='percent-normed')
+            plt.legend()
+            plt.savefig('output/visualization/%s-plot.png' % uid)
+            plt.clf()
+            print('%s saved: %s, %s, %s' % (uid, str(week_[:2]), str(fvc_[:2]), str(percent_[:2])))
+
     def run(self):
-        self._visualize_all_sequence()
+        self._plot_all_sequence()
 
 
 if __name__ == '__main__':

@@ -1,9 +1,12 @@
 <component name="ProjectDictionaryState">
   <dictionary name="halla">
     <words>
+      <w>dataset</w>
       <w>dset</w>
       <w>resample</w>
       <w>sqrt</w>
+      <w>testset</w>
+      <w>trainset</w>
       <w>xgboost</w>
     </words>
   </dictionary>
