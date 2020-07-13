@@ -15,8 +15,11 @@ logging.basicConfig(level=logging.INFO)
 
 CONST_SQRT2 = math.sqrt(2)
 
-CONST_POLYNOMIAL_INTERPOLATION_POWER = 10
+POLYNOMIAL_INTERPOLATION_POWER = 10
+RANDOM_STATE = 30
 
 DATA_PATH_ROOT = 'g:\\datasets\\kaggle\\osic-pulmonary-fibrosis-progression'
+
+SYS_PATH_SEP = '/'
 
 logger.info('testing info logger...')

@@ -32,7 +32,7 @@ def linear_interpolation(source, target):
     return interpolated
 
 
-def polynomial_interpolation(source, target, power=CONST_POLYNOMIAL_INTERPOLATION_POWER):
+def polynomial_interpolation(source, target, power=POLYNOMIAL_INTERPOLATION_POWER):
     """
     多项式曲线拟合得到插值结果
     :param source:

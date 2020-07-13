@@ -8,6 +8,7 @@
 from sklearn.linear_model import Ridge
 from collections import defaultdict
 from utils.evaluate import evaluate_on_testset
+from utils.dataloader import DataLoader
 
 import lightgbm as lgb
 import torch
@@ -16,13 +17,15 @@ import pandas as pd
 
 class Baseline:
     def __init__(self):
-        pass
+        self.loader = DataLoader()
+        self._init_data()
 
     def _init_data(self):
         self.trainset = defaultdict(list)
         self.testset = defaultdict(list)
         self._load_basic('data/train.csv', self.trainset)
         self._load_basic('data/test.csv', self.testset)
+        self.x_train, self.y_train, self.x_val, self.y_val = self.loader.get_dataset(fold=0.9)
 
     @staticmethod
     def _load_basic(path, dataset):
@@ -57,12 +60,15 @@ class Baseline:
     def _baseline_xgboost(self):
         pass
 
+    def _baseline_light_gbm(self):
+        model = lgb.LGBMRegressor()
+        model.fit(self.x_train, self.y_train)
+
     def _baseline_basic_cnn(self):
         pass
 
     def run(self):
-        self._baseline_average()
-        self._baseline_quantile_regression()
+        self._baseline_light_gbm()
 
 
 if __name__ == '__main__':
