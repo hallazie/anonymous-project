@@ -19,6 +19,7 @@ class DataLoader:
     def __init__(self):
         self.train_path = get_abs_path(__file__, -2, 'data', 'train.csv')
         self.test_path = get_abs_path(__file__, -2, 'data', 'test.csv')
+        self.smoker_map = {'Never smoked': 0, 'Ex-smoker': 1, 'Currently smokes': 2}
         self._init_raw()
 
     def _init_raw(self):
@@ -28,15 +29,15 @@ class DataLoader:
         data = defaultdict(list)
         for row in df.values:
             uid = row[header_idx['Patient']]
-            if uid in test_uid:
-                continue
             week = row[header_idx['Weeks']]
             fvc = row[header_idx['FVC']]
             percent = row[header_idx['Percent']]
             age = row[header_idx['Age']]
             gender = row[header_idx['Sex']]
             smoker = row[header_idx['SmokingStatus']]
-            data[uid].append((week, fvc, percent, age, gender, smoker))
+            gender_ = 0 if gender == 'Male' else 1
+            smoker_ = self.smoker_map[smoker]
+            data[uid].append((week, fvc, percent, age, gender_, smoker_))
         self.X, self.y = [], []
         for uid in data:
             basic = sorted(data[uid], key=lambda x: x[0])[0]
@@ -49,17 +50,22 @@ class DataLoader:
                 self.y.append(fvc)
 
     def get_dataset(self, fold=0.9):
+        """
+        k-fold cross validation
+        :param fold:
+        :return:
+        """
         X, y = shuffle(self.X, self.y, random_state=RANDOM_STATE)
         size = int(float(fold) / 1. * len(X))
-        print(size)
-        # return X[:size], y[:size], X[size:], y[size:]
         return np.array(X[:size]), np.array(y[:size]), np.array(X[size:]), np.array(y[size:])
+
+    def get_dataset_with_validation(self):
+        """
+        返回5个测试集的最后三个FVC
+        :return:
+        """
+        pass
 
 
 if __name__ == '__main__':
-    # loader = DataLoader()
-    # x0, y0, x1, y1 = loader.get_dataset()
-    # print(len(x0), len(y0), len(x1), len(y1))
-    # print(x1)
-    # print(y1)
-    print(__file__)
+    pass

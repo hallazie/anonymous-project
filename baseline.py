@@ -5,14 +5,17 @@
 # @time: 2020/7/11 22:30
 # @desc: baselines for the task
 
-from sklearn.linear_model import Ridge
 from collections import defaultdict
-from utils.evaluate import evaluate_on_testset
+from utils.evaluate import evaluate_on_testset, evaluate_on_array
 from utils.dataloader import DataLoader
+from lightgbm import LGBMRegressor
+from xgboost import XGBRegressor
+from config import logger
 
-import lightgbm as lgb
 import torch
+import time
 import pandas as pd
+import numpy as np
 
 
 class Baseline:
@@ -26,6 +29,7 @@ class Baseline:
         self._load_basic('data/train.csv', self.trainset)
         self._load_basic('data/test.csv', self.testset)
         self.x_train, self.y_train, self.x_val, self.y_val = self.loader.get_dataset(fold=0.9)
+        logger.info('training size: %s, %s, validation size: %s, %s' % (str(self.x_train.shape), str(self.y_train.shape), str(self.x_val.shape), str(self.y_val.shape)))
 
     @staticmethod
     def _load_basic(path, dataset):
@@ -47,7 +51,7 @@ class Baseline:
                 uid_week = '%s_%s' % (uid, i)
                 output.append((uid_week, inp[1], 833))
         result = evaluate_on_testset(output)
-        print('average result <laplace log-likelihood>: %s' % result)
+        logger.info('average result <laplace log-likelihood>: %s' % result)
 
     @staticmethod
     def _baseline_quantile_regression():
@@ -55,19 +59,35 @@ class Baseline:
         for row in pd.read_csv('output/submission-quantile-regression.csv').values:
             output.append((row[0], row[1], row[2]))
         result = evaluate_on_testset(output)
-        print('average result <laplace log-likelihood>: %s' % result)
+        logger.info('average result <laplace log-likelihood>: %s' % result)
 
     def _baseline_xgboost(self):
-        pass
+        model = XGBRegressor()
+        start = time.time()
+        model.fit(self.x_train, self.y_train, verbose=True)
+        end = time.time()
+        logger.info('training finished with %ss' % (end - start))
+        predict = model.predict(self.x_val)
+        confidence = [np.std([self.y_val[i], predict[i]]) for i in range(len(self.y_val))]
+        avg_metric = evaluate_on_array(self.y_val, predict, confidence)
+        logger.info('baseline with XGBoost laplace log-likelihood: %s' % avg_metric)
 
     def _baseline_light_gbm(self):
-        model = lgb.LGBMRegressor()
-        model.fit(self.x_train, self.y_train)
+        model = LGBMRegressor(objective='regression', verbose=0)
+        start = time.time()
+        model.fit(self.x_train, self.y_train, verbose=True)
+        end = time.time()
+        logger.info('training finished with %ss' % (end - start))
+        predict = model.predict(self.x_val)
+        confidence = [np.std([self.y_val[i], predict[i]]) for i in range(len(self.y_val))]
+        avg_metric = evaluate_on_array(self.y_val, predict, confidence)
+        logger.info('baseline with LightGBM laplace log-likelihood: %s' % avg_metric)
 
     def _baseline_basic_cnn(self):
         pass
 
     def run(self):
+        self._baseline_xgboost()
         self._baseline_light_gbm()
 
 

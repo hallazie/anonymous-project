@@ -40,6 +40,14 @@ def evaluate_on_testset(output):
     return avg_score
 
 
+def evaluate_on_array(label_array, predict_array, sigma_array):
+    assert len(label_array) == len(predict_array)
+    res = []
+    for i in range(len(label_array)):
+        res.append(laplace_log_likelihood(label_array[i], predict_array[i], sigma_array[i]))
+    return float(sum(res)) / len(res) if len(res) > 0 else 0
+
+
 if __name__ == '__main__':
     output = {}
     evaluate_on_testset(output)
