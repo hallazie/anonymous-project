@@ -16,7 +16,7 @@ import SimpleITK as sitk
 
 class Processor:
     def __init__(self):
-        self.mask_model = mask.get_model('unet','LTRCLobes')
+        self.mask_model = mask.get_model('unet', 'LTRCLobes')
 
     @staticmethod
     def linear_interpolation(source, target):
@@ -53,6 +53,12 @@ class Processor:
         min_ = min(source)
         avg_ = sum([np.sqrt(np.abs(interpolated[i] - target[i])) for i, x in enumerate(source)]) / float(len(source))
         return interpolated, avg_
+
+    def lung_masking_show(self, image):
+        segmentation = mask.apply(image, self.mask_model)
+        raw = image.pixel_array
+        fused = normalize_matrix(segmentation[0]) + normalize_matrix(raw[0])
+        return normalize_matrix(fused, 255)
 
     def lung_masking_from_file(self, file_name):
         image = sitk.ReadImage(file_name)

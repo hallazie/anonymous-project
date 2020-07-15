@@ -16,6 +16,7 @@ import pydicom
 import seaborn as sns
 import imageio
 import random
+import traceback
 import os
 
 
@@ -69,15 +70,17 @@ class EDA:
                 # sequence = [pydicom.filereader.dcmread(os.path.join(f, x)) for x in f_list]
                 sequence = [processor.lung_masking_from_file_show(os.path.join(f, x)) for x in f_list]
                 # sequence = sorted(sequence, key=lambda x: x.ImagePositionPatient[2])
-                # sequence = [normalize_image(x.pixel_array, (512, 512)) for x in sequence]
+                # sequence = [processor.lung_masking_show(x) for x in sequence]
                 imageio.mimsave('output/segmentation/%s.gif' % idx, sequence, duration=0.0001)
                 logger.info('%s finished!' % f)
             except ValueError as ve:
                 logger.error('%s failed with value error: %s' % (f, ve))
             except AttributeError as ae:
                 logger.error('%s failed with attribute error: %s' % (f, ae))
+                traceback.print_exc()
             except Exception as e:
                 logger.error('%s failed with other error: %s' % (f, e))
+                traceback.print_exc()
 
     @staticmethod
     def _plot_all_sequence():

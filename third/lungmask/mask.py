@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from third.lungmask import lungmask_utils
 import SimpleITK as sitk
+import pydicom
 from .resunet import UNet
 import warnings
 import sys
@@ -24,11 +25,16 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
     if model is None:
         model = get_model('unet', 'R231')
 
-    inimg_raw = sitk.GetArrayFromImage(image)
-    directions = np.asarray(image.GetDirection())
-    if len(directions) == 9:
-        inimg_raw = np.flip(inimg_raw, np.where(directions[[0, 4, 8]][::-1] < 0)[0])
-    del image
+    if type(image) is sitk.Image:
+        inimg_raw = sitk.GetArrayFromImage(image)
+        directions = np.asarray(image.GetDirection())
+        if len(directions) == 9:
+            inimg_raw = np.flip(inimg_raw, np.where(directions[[0, 4, 8]][::-1] < 0)[0])
+        del image
+    elif type(image) is pydicom.dataset.FileDataset:
+        inimg_raw = np.expand_dims(image.pixel_array, 0)
+    else:
+        raise TypeError
 
     if force_cpu:
         device = torch.device('cpu')
@@ -82,8 +88,8 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
              range(outmask.shape[0])],
             dtype=np.uint8)
 
-    if len(directions) == 9:
-        outmask = np.flip(outmask, np.where(directions[[0, 4, 8]][::-1] < 0)[0])
+    # if len(directions) == 9:
+    #     outmask = np.flip(outmask, np.where(directions[[0, 4, 8]][::-1] < 0)[0])
 
     return outmask.astype(np.uint8)
 
