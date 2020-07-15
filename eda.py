@@ -7,6 +7,7 @@
 
 from config import logger, DATA_PATH_ROOT
 from utils.image import normalize_image
+from utils.process import processor
 from utils.common import normalize_vector
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -59,14 +60,17 @@ class EDA:
         imageio.mimsave('output/visualization/random-sequence.gif', sequence, duration=0.0001)
     
     def _visualize_all_sequence(self):
-        for f in self.train_user_dirs:
+        for idx, f in enumerate(self.train_user_dirs):
+            if idx == 10:
+                break
             try:
                 idx = f.split(os.sep)[-1]
                 f_list = os.listdir(f)
-                sequence = [pydicom.filereader.dcmread(os.path.join(f, x)) for x in f_list]
-                sequence = sorted(sequence, key=lambda x: x.ImagePositionPatient[2])
-                sequence = [normalize_image(x.pixel_array, (512, 512)) for x in sequence]
-                imageio.mimsave('output/visualization/%s.gif' % idx, sequence, duration=0.0001)
+                # sequence = [pydicom.filereader.dcmread(os.path.join(f, x)) for x in f_list]
+                sequence = [processor.lung_masking_from_file_show(os.path.join(f, x)) for x in f_list]
+                # sequence = sorted(sequence, key=lambda x: x.ImagePositionPatient[2])
+                # sequence = [normalize_image(x.pixel_array, (512, 512)) for x in sequence]
+                imageio.mimsave('output/segmentation/%s.gif' % idx, sequence, duration=0.0001)
                 logger.info('%s finished!' % f)
             except ValueError as ve:
                 logger.error('%s failed with value error: %s' % (f, ve))
@@ -102,7 +106,7 @@ class EDA:
             plt.plot(idx_, percent_, label='percent')
             plt.plot(idx_, percent_norm, label='percent-normed')
             plt.legend()
-            plt.savefig('output/visualization/%s-plot.png' % uid)
+            plt.savefig('output/segmentation/%s-plot.png' % uid)
             plt.clf()
             print('%s saved: %s, %s, %s' % (uid, str(week_[:2]), str(fvc_[:2]), str(percent_[:2])))
 
