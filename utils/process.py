@@ -11,6 +11,7 @@ from config import *
 
 import matplotlib.pyplot as plt
 import numpy as np
+import cv2
 import SimpleITK as sitk
 
 
@@ -54,6 +55,10 @@ class Processor:
         avg_ = sum([np.sqrt(np.abs(interpolated[i] - target[i])) for i, x in enumerate(source)]) / float(len(source))
         return interpolated, avg_
 
+    def lung_masking(self, image):
+        segmentation = mask.apply(image, self.mask_model)
+        return segmentation
+
     def lung_masking_show(self, image):
         segmentation = mask.apply(image, self.mask_model)
         raw = image.pixel_array
@@ -71,6 +76,9 @@ class Processor:
         raw = sitk.GetArrayFromImage(image)
         fused = normalize_matrix(segmentation[0]) + normalize_matrix(raw[0])
         return normalize_matrix(fused, 255)
+
+    def lung_masking_cv(self, image):
+        pass
 
 
 processor = Processor()
