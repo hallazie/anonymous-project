@@ -62,8 +62,6 @@ class EDA:
     
     def _visualize_all_sequence(self):
         for idx, f in enumerate(self.train_user_dirs):
-            if idx == 10:
-                break
             try:
                 idx = f.split(os.sep)[-1]
                 f_list = os.listdir(f)
