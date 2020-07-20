@@ -38,7 +38,7 @@ class DataLoader:
             gender_ = 0 if gender == 'Male' else 1
             smoker_ = self.smoker_map[smoker]
             data[uid].append((week, fvc, percent, age, gender_, smoker_))
-        self.X, self.y = [], []
+        self.X, self.y, self.uid = [], [], []
         for uid in data:
             basic = sorted(data[uid], key=lambda x: x[0])[0]
             basic_week = basic[0]
@@ -48,6 +48,7 @@ class DataLoader:
                 week, fvc, percent, age, gender, smoker = x
                 self.X.append((basic_week, basic_fvc, basic_percent, week, age, gender, smoker))
                 self.y.append(fvc)
+                self.uid.append(uid)
 
     def get_dataset(self, fold=0.9):
         """
@@ -58,6 +59,16 @@ class DataLoader:
         X, y = shuffle(self.X, self.y, random_state=RANDOM_STATE)
         size = int(float(fold) / 1. * len(X))
         return np.array(X[:size]), np.array(y[:size]), np.array(X[size:]), np.array(y[size:])
+
+    def get_dataset_with_uid(self, fold=0.9):
+        """
+        k-fold cross validation
+        :param fold:
+        :return:
+        """
+        X, y, uid = shuffle(self.X, self.y, self.uid, random_state=RANDOM_STATE)
+        size = int(float(fold) / 1. * len(X))
+        return np.array(X[:size]), np.array(y[:size]), uid[:size], np.array(X[size:]), np.array(y[size:]), uid[size:]
 
     def get_dataset_with_validation(self):
         """
