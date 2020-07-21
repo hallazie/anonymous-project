@@ -13,23 +13,23 @@ import matplotlib.pyplot as plt
 import pydicom
 import numpy as np
 import os
-import cv2
 
 
 class Loader:
     def __init__(self):
         self.train_data = {}
         self._fetch_patient_files()
-        self._fetch_data()
 
     def _fetch_patient_files(self):
         self.train_user_dirs, self.test_user_dirs = [], []
+        self.train_user_dict, self.test_user_dict = {}, {}
         self.train_uid, self.test_uid = [], []
         for d in os.listdir(os.path.join(DATA_PATH_ROOT, 'train')):
             path = os.path.join(DATA_PATH_ROOT, 'train', d)
             if not os.path.isdir(path):
                 continue
             self.train_user_dirs.append(path)
+            self.train_user_dict[d] = path
             self.train_uid.append(d)
         for d in os.listdir(os.path.join(DATA_PATH_ROOT, 'test')):
             path = os.path.join(DATA_PATH_ROOT, 'test', d)
@@ -37,11 +37,10 @@ class Loader:
                 continue
             self.test_user_dirs.append(path)
             self.test_uid.append(d)
+            self.test_user_dict[d] = path
 
     def _fetch_data(self):
         for idx, f in enumerate(self.train_user_dirs):
-            if idx == 5:
-                break
             try:
                 f_list = os.listdir(f)
                 sequence = [pydicom.filereader.dcmread(os.path.join(f, x)) for x in f_list]
@@ -58,7 +57,24 @@ class Loader:
     def fetch_array_by_uid(self, uid):
         return self.train_data[uid]
 
+    def fetch_path_by_uid(self, uid):
+        if uid in self.train_user_dict:
+            root = self.train_user_dict[uid]
+            ret = []
+            for f in os.listdir(root):
+                if f.endswith('.dcm'):
+                    ret.append(os.path.join(root, f))
+            return ret
+        elif uid in self.test_user_dict:
+            root = self.test_user_dict[uid]
+            ret = []
+            for f in os.listdir(root):
+                if f.endswith('.dcm'):
+                    ret.append(os.path.join(root, f))
+            return ret
+
     def visualize(self):
+        self._fetch_data()
         import random
         uid = 'ID00010637202177584971671'
         image_list = self.fetch_array_by_uid(uid)
@@ -72,6 +88,7 @@ class Loader:
         plt.show()
 
 
+loader = Loader()
+
 if __name__ == '__main__':
-    loader = Loader()
     loader.visualize()

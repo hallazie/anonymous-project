@@ -1,7 +1,7 @@
 # --*-- coding:utf-8 --*--
 # @author: Xiao Shanghua
 # @contact: hallazie@outlook.com
-# @file: process.py
+# @file: mask.py
 # @time: 2020/7/12 15:42
 # @desc:
 
@@ -15,7 +15,7 @@ import cv2
 import SimpleITK as sitk
 
 
-class Processor:
+class Masking:
     def __init__(self):
         self.mask_model = mask.get_model('unet', 'LTRCLobes')
 
@@ -81,7 +81,7 @@ class Processor:
         pass
 
 
-processor = Processor()
+masking = Masking()
 
 
 if __name__ == '__main__':

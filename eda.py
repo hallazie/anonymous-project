@@ -7,13 +7,11 @@
 
 from config import logger, DATA_PATH_ROOT
 from utils.image import normalize_image
-from utils.process import processor
+from ct.mask import processor
 from utils.common import normalize_vector
 import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
 import pydicom
-import seaborn as sns
 import imageio
 import random
 import traceback
