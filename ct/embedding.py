@@ -29,13 +29,14 @@ class Embedding:
 
     @staticmethod
     def embedding(image_list: list) -> np.ndarray:
-        feature_list = np.array([masking.lung_masking(x) for x in image_list])
+        feature_list = np.array([masking.lung_masking(x)[0] for x in image_list])
+        print(feature_list.shape)
         feature = np.mean(feature_list, axis=0)
         return feature
 
     @staticmethod
     def concat(v1, v2):
-        return np.concatenate(v1, v2)
+        return np.concatenate((v1, v2), axis=0)
 
 
 embedding = Embedding()

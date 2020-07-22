@@ -28,6 +28,7 @@ class Baseline:
         self.testset = defaultdict(list)
         self._load_basic('data/train.csv', self.trainset)
         self._load_basic('data/test.csv', self.testset)
+        # self.x_train, self.y_train, self.x_val, self.y_val = self.loader.get_dataset(fold=0.9)
         self.x_train, self.y_train, self.x_val, self.y_val = self.loader.get_dataset_with_ct(fold=0.9)
         # self.x_train, self.y_train, self.uid_train, self.x_val, self.y_val, self.uid_val = self.loader.get_dataset_with_uid(fold=0.9)
         logger.info('training size: %s, %s, validation size: %s, %s' % (str(self.x_train.shape), str(self.y_train.shape), str(self.x_val.shape), str(self.y_val.shape)))
@@ -96,6 +97,11 @@ class Baseline:
         pass
 
     def run(self):
+        """
+        with 32*32 ct feature: -6.385669612878189
+        with only meta feature: -6.385669612878189
+        :return:
+        """
         # self._baseline_xgboost()
         self._baseline_light_gbm()
 

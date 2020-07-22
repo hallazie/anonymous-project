@@ -70,7 +70,8 @@ class DataLoader:
         self.ct_feature = {}
         for uid in uid_set:
             path_list = loader.fetch_path_by_uid(uid)
-            feature = embedding.embedding_from_files(path_list[:1], transform=self.transform)
+            # feature = embedding.embedding_from_files(path_list[:2], transform=self.transform)
+            feature = embedding.embedding_from_files(path_list, transform=self.transform)
             self.ct_feature[uid] = feature
         logger.info('ct-scan feature loading finished')
 
@@ -83,9 +84,6 @@ class DataLoader:
         X = []
         for i in range(len(self.uid)):
             ct_feature = self.ct_feature[self.uid[i]]
-            print(ct_feature.shape)
-            print(self.X.shape)
-            print(self.X[i].shape)
             X.append(embedding.concat(self.X[i], ct_feature))
         X = np.array(X)
         logger.info('finished constructing input X with ct-scan segmentation feature with shape: %s' % str(X.shape))
@@ -100,6 +98,8 @@ class DataLoader:
         :return:
         """
         X, y = shuffle(self.X, self.y, random_state=RANDOM_STATE)
+        X = np.array(X)
+        logger.info('finished constructing input X without ct-scan segmentation feature with shape: %s' % str(X.shape))
         size = int(float(fold) / 1. * len(X))
         return np.array(X[:size]), np.array(y[:size]), np.array(X[size:]), np.array(y[size:])
 
