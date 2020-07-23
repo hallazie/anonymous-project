@@ -16,7 +16,7 @@ from config import RANDOM_STATE, logger
 from ct.embedding import embedding
 from ct.loader import loader
 from ct.transform import transform_feature
-from utils.common import get_abs_path
+from utils.common import get_abs_path, sample_array_to_bins
 
 
 class DataLoader:
@@ -71,6 +71,7 @@ class DataLoader:
         for uid in uid_set:
             path_list = loader.fetch_path_by_uid(uid)
             # feature = embedding.embedding_from_files(path_list[:2], transform=self.transform)
+            path_list = sample_array_to_bins(path_list, 10)
             feature = embedding.embedding_from_files(path_list, transform=self.transform)
             self.ct_feature[uid] = feature
         logger.info('ct-scan feature loading finished')

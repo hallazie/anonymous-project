@@ -28,6 +28,13 @@ def get_abs_path(file_, idx, *args):
     return SYS_PATH_SEP.join(file_list)
 
 
+def sample_array_to_bins(raw_list, bins):
+    if len(raw_list) // bins <= 1:
+        return raw_list
+    step = len(raw_list) // bins
+    return [x for i, x in enumerate(raw_list) if i % step == 0]
+
+
 if __name__ == '__main__':
     res = get_abs_path('F:/kaggle/pulmonary-fibrosis-progression/utils/dataloader.py', -2, 'data', 'train.csv')
     print(res)
