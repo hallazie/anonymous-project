@@ -16,6 +16,11 @@ import SimpleITK as sitk
 
 
 class Masking:
+    """
+    bad case:
+        'G:\\datasets\\kaggle\\osic-pulmonary-fibrosis-progression\\train\\ID00026637202179561894768\\19.dcm'
+
+    """
     def __init__(self):
         self.mask_model = mask.get_model('unet', 'LTRCLobes')
 
@@ -55,8 +60,8 @@ class Masking:
         avg_ = sum([np.sqrt(np.abs(interpolated[i] - target[i])) for i, x in enumerate(source)]) / float(len(source))
         return interpolated, avg_
 
-    def lung_masking(self, image):
-        segmentation = mask.apply(image, self.mask_model)
+    def lung_masking(self, image, vol_postprocessing=True):
+        segmentation = mask.apply(image, self.mask_model, volume_postprocessing=vol_postprocessing)
         return segmentation
 
     def lung_masking_show(self, image):

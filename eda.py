@@ -6,9 +6,11 @@
 # @desc:
 
 from config import logger, DATA_PATH_ROOT
+from ct.process import processor
+from ct.mask import masking
 from utils.image import normalize_image
-from ct.mask import processor
 from utils.common import normalize_vector
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import pydicom
@@ -16,6 +18,7 @@ import imageio
 import random
 import traceback
 import os
+import SimpleITK as sitk
 
 
 class EDA:
@@ -43,11 +46,16 @@ class EDA:
         f_list = os.listdir(self.train_user_dirs[d_idx])
         f_idx = random.randint(0, len(f_list))
         path = os.path.join(self.train_user_dirs[d_idx], f_list[f_idx])
+        path = 'G:\\datasets\\kaggle\\osic-pulmonary-fibrosis-progression\\train\\ID00130637202220059448013\\19.dcm'
         dset = pydicom.filereader.dcmread(path)
+        mask = masking.lung_masking(sitk.ReadImage(path), vol_postprocessing=True)[0]
         print(dset)
-        plt.figure(figsize=(5, 5))
-        plt.grid(False)
+        # plt.figure(figsize=(5, 5))
+        # plt.grid(False)
+        plt.subplot(121)
         plt.imshow(dset.pixel_array, cmap='gray')
+        plt.subplot(122)
+        plt.imshow(mask)
         plt.show()
 
     def _visualize_random_sequence(self):
@@ -110,8 +118,9 @@ class EDA:
             print('%s saved: %s, %s, %s' % (uid, str(week_[:2]), str(fvc_[:2]), str(percent_[:2])))
 
     def run(self):
-        self._visualize_all_sequence()
-        self._plot_all_sequence()
+        # self._visualize_all_sequence()
+        # self._plot_all_sequence()
+        self._visualize_random_single()
 
 
 if __name__ == '__main__':

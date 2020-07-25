@@ -19,7 +19,7 @@ from ct.transform import transform_feature
 from utils.common import get_abs_path, sample_array_to_bins
 
 
-class DataLoader:
+class FVCPredictDataLoader:
     def __init__(self):
         self.train_path = get_abs_path(__file__, -2, 'data', 'train.csv')
         self.test_path = get_abs_path(__file__, -2, 'data', 'test.csv')
@@ -43,7 +43,7 @@ class DataLoader:
             smoker_ = self.smoker_map[smoker]
             data[uid].append((week, fvc, percent, age, gender_, smoker_))
         self.X, self.y, self.uid = [], [], []
-        for uid in data:
+        for i, uid in enumerate(data):
             basic = sorted(data[uid], key=lambda x: x[0])[0]
             basic_week = basic[0]
             basic_fvc = basic[1]
@@ -65,30 +65,29 @@ class DataLoader:
             logger.error('error at current ct-scan feature, fill zero instead...')
             return np.zeros((32 * 32, ))
 
-    def _init_ct(self):
+    def _init_ct(self, bins):
         uid_set = set(self.uid)
         self.ct_feature = {}
         for uid in uid_set:
             path_list = loader.fetch_path_by_uid(uid)
             # feature = embedding.embedding_from_files(path_list[:2], transform=self.transform)
-            path_list = sample_array_to_bins(path_list, 10)
+            path_list = sample_array_to_bins(path_list, bins)
             feature = embedding.embedding_from_files(path_list, transform=self.transform)
             self.ct_feature[uid] = feature
         logger.info('ct-scan feature loading finished')
 
-    def get_dataset_with_ct(self, fold=0.9):
+    def get_dataset_with_ct(self, bins=10, fold=0.9):
         """
         k-fold，带有ct segmentation信息的
         :return:
         """
-        self._init_ct()
+        self._init_ct(bins)
         X = []
         for i in range(len(self.uid)):
             ct_feature = self.ct_feature[self.uid[i]]
             X.append(embedding.concat(self.X[i], ct_feature))
-        X = np.array(X)
-        logger.info('finished constructing input X with ct-scan segmentation feature with shape: %s' % str(X.shape))
-        X, y = shuffle(self.X, self.y, random_state=RANDOM_STATE)
+        X, y = shuffle(X, self.y, random_state=RANDOM_STATE)
+        logger.info('finished constructing input X with ct-scan segmentation feature with shape: %s, %s' % (len(X), str(X[0].shape)))
         size = int(float(fold) / 1. * len(X))
         return np.array(X[:size]), np.array(y[:size]), np.array(X[size:]), np.array(y[size:])
 
@@ -120,6 +119,11 @@ class DataLoader:
         :return:
         """
         pass
+    
+    
+class AutoEncoderDataLoader:
+    def __init__(self):
+        super(AutoEncoderDataLoader, self).__init__()
 
 
 if __name__ == '__main__':

@@ -7,7 +7,7 @@
 
 from collections import defaultdict
 from utils.evaluate import evaluate_on_testset, evaluate_on_array
-from utils.dataloader import DataLoader
+from utils.dataloader import FVCPredictDataLoader
 from lightgbm import LGBMRegressor
 from xgboost import XGBRegressor
 from config import logger
@@ -20,7 +20,7 @@ import numpy as np
 
 class Baseline:
     def __init__(self):
-        self.loader = DataLoader()
+        self.loader = FVCPredictDataLoader()
         self._init_data()
 
     def _init_data(self):
@@ -29,7 +29,7 @@ class Baseline:
         self._load_basic('data/train.csv', self.trainset)
         self._load_basic('data/test.csv', self.testset)
         # self.x_train, self.y_train, self.x_val, self.y_val = self.loader.get_dataset(fold=0.9)
-        self.x_train, self.y_train, self.x_val, self.y_val = self.loader.get_dataset_with_ct(fold=0.9)
+        self.x_train, self.y_train, self.x_val, self.y_val = self.loader.get_dataset_with_ct(bins=20, fold=0.9)
         # self.x_train, self.y_train, self.uid_train, self.x_val, self.y_val, self.uid_val = self.loader.get_dataset_with_uid(fold=0.9)
         logger.info('training size: %s, %s, validation size: %s, %s' % (str(self.x_train.shape), str(self.y_train.shape), str(self.x_val.shape), str(self.y_val.shape)))
 
@@ -98,8 +98,10 @@ class Baseline:
 
     def run(self):
         """
-        with 32*32 ct feature: -6.385669612878189
+        with 32*32 ct feature: *
         with only meta feature: -6.385669612878189
+        with 32*32 ct feature samples in even 10 bins: -6.256543006505297
+        with 32*32 ct feature samples in even 20 bins: -6.255453477123299
         :return:
         """
         # self._baseline_xgboost()
