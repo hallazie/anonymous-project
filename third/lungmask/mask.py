@@ -9,6 +9,7 @@ import sys
 from tqdm import tqdm
 import skimage
 import logging
+import matplotlib.pyplot as plt
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -35,7 +36,7 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
         inimg_raw = np.expand_dims(image.pixel_array, 0)
     else:
         raise TypeError
-
+    print(inimg_raw)
     if force_cpu:
         device = torch.device('cpu')
     else:
@@ -49,6 +50,9 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
 
     if not noHU:
         tvolslices, xnew_box = lungmask_utils.preprocess(inimg_raw, resolution=[256, 256])
+        print(tvolslices)
+        # plt.imshow(tvolslices[0])
+        # plt.show()
         tvolslices[tvolslices > 600] = 600
         tvolslices = np.divide((tvolslices + 1024), 1624)
     else:
@@ -64,20 +68,30 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
                                                  pin_memory=False)
 
     timage_res = np.empty((np.append(0, tvolslices[0].shape)), dtype=np.uint8)
-
+    print('stack shape:', timage_res.shape)
     with torch.no_grad():
         for X in tqdm(dataloader_val):
             X = X.float().to(device)
             prediction = model(X)
+            y = prediction.detach().cpu().numpy()
+
+            for i, x in enumerate(y[0]):
+                # plt.subplot('23%s' % (i+1))
+                # plt.imshow(x)
+                print(x.shape, np.max(x), np.min(x), np.mean(x))
             pls = torch.max(prediction, 1)[1].detach().cpu().numpy().astype(np.uint8)
             timage_res = np.vstack((timage_res, pls))
+            plt.show()
 
     # postprocessing includes removal of small connected components, hole filling and mapping of small components to
     # neighbors
+    print('!!! in result shape:', timage_res.shape)
     if volume_postprocessing:
         outmask = lungmask_utils.postrocessing(timage_res)
     else:
         outmask = timage_res
+
+    print('!!! out mask shape:', outmask.shape)
 
     if noHU:
         outmask = skimage.transform.resize(outmask[np.argmax((outmask == 1).sum(axis=(1, 2)))], inimg_raw.shape[:2],

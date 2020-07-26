@@ -19,7 +19,6 @@ class Masking:
     """
     bad case:
         'G:\\datasets\\kaggle\\osic-pulmonary-fibrosis-progression\\train\\ID00026637202179561894768\\19.dcm'
-
     """
     def __init__(self):
         self.mask_model = mask.get_model('unet', 'LTRCLobes')

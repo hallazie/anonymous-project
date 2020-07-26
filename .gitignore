@@ -1,8 +1,10 @@
 /.idea/*
 /data/*
 /model/*
+/checkpoints/*
 /output/*
 /.ipynb_checkpoints/*
 *.pyc
 *.ipynb
 *.pdf
+*.pth
