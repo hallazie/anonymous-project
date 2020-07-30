@@ -4,12 +4,13 @@
 # @file: dataloader.py
 # @time: 2020/7/14 0:23
 # @desc:
-
+import os
 from collections import defaultdict
 
 import cv2
 import numpy as np
 import pandas as pd
+import pydicom
 from sklearn.utils import shuffle
 
 from config import RANDOM_STATE, logger
@@ -126,5 +127,54 @@ class AutoEncoderDataLoader:
         super(AutoEncoderDataLoader, self).__init__()
 
 
+class PolynomialFitRegressionDataLoader:
+    def __init__(self):
+        super(PolynomialFitRegressionDataLoader, self).__init__()
+        self.train_path = get_abs_path(__file__, -2, 'data', 'train.csv')
+        self.power = 3
+        self._init_meta()
+        self._init_ct(10)
+
+    def _init_meta(self):
+        df = pd.read_csv(self.train_path)
+        header_idx = {k: i for i, k in enumerate(df.columns)}
+        self.data = defaultdict(list)
+        for row in df.values:
+            uid = row[header_idx['Patient']]
+            week = row[header_idx['Weeks']]
+            fvc = row[header_idx['FVC']]
+            percent = row[header_idx['Percent']]
+            age = row[header_idx['Age']]
+            gender = row[header_idx['Sex']]
+            gender_ = 0 if gender == 'Male' else 1
+            self.data[uid].append((week, fvc, percent, age, gender_))
+
+    def _init_ct(self, bins):
+        self.ct_feature = {}
+        import matplotlib.pyplot as plt
+        for uid in self.data:
+            try:
+                path_list = loader.fetch_path_by_uid(uid)
+                sequence = [pydicom.filereader.dcmread(x) for x in path_list]
+                sequence = sorted(sequence, key=lambda x: x.ImagePositionPatient[2])
+                sequence = sample_array_to_bins(sequence, 16, strict=True)
+                sequence = [x.pixel_array for x in sequence]
+                plt.figure(figsize=(20, 12))
+                for i in range(4):
+                    plt.subplot('24%s' % (i*2+1))
+                    plt.imshow(sequence[i*4])
+                    plt.subplot('24%s' % (i*2+2))
+                    plt.imshow(sequence[i*4+1])
+                plt.savefig('../output/bin/%s-plot.png' % uid)
+                print('%s save finished' % uid)
+            except Exception as e:
+                logger.error(e)
+        logger.info('ct-scan feature loading finished')
+
+    def get_fvc_curve_polynomial_coefficient(self, week_list, fvc_list):
+        z = np.polyfit(week_list, fvc_list, self.power)
+        return z
+
+
 if __name__ == '__main__':
-    pass
+    poly_regression = PolynomialFitRegressionDataLoader()

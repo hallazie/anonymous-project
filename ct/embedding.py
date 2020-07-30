@@ -5,8 +5,9 @@
 # @time: 2020/7/20 22:27
 # @desc: 将CT图像特征嵌入为向量特征
 
-from ct.process import processor
+from config import logger
 from ct.mask import masking
+from third.lungmask import masking
 from ct.transform import transform_feature
 
 import numpy as np
@@ -15,10 +16,10 @@ import SimpleITK as sitk
 
 class Embedding:
     def __init__(self):
-        pass
+        self.masking = masking.LungMask()
 
     def embedding_from_files(self, file_list, feature_raw=None, transform=None):
-        image_list = [sitk.ReadImage(x) for x in file_list]
+        image_list = [sitk.GetArrayFromImage(sitk.ReadImage(x))[0] for x in file_list]
         feature = self.embedding(image_list)
         feature = transform_feature.flatten(feature) if not transform else transform(feature)
         if not feature_raw:
@@ -27,10 +28,10 @@ class Embedding:
         feature = self.concat(feature_raw, feature)
         return feature
 
-    @staticmethod
-    def embedding(image_list: list) -> np.ndarray:
-        feature_list = np.array([masking.lung_masking(x)[0] for x in image_list])
-        print(feature_list.shape)
+    def embedding(self, image_list: list) -> np.ndarray:
+        # feature_list = np.array([masking.lung_masking(x)[0] for x in image_list])
+        feature_list = np.array([self.masking.apply(x) for x in image_list])
+        logger.info('current user ct-scan feature loaded with matrix shape: %s' % str(feature_list.shape))
         feature = np.mean(feature_list, axis=0)
         return feature
 

@@ -13,13 +13,13 @@ from config import logger
 import skimage
 import torch
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import SimpleITK as sitk
 
 
 class LungMask:
     def __init__(self):
-        self.model_path = '../../checkpoints/unet_ltrclobes-3a07043d.pth'
+        self.model_path = '../../../unet_ltrclobes-3a07043d.pth'
         self._init_env()
         self._init_model()
 
@@ -87,8 +87,6 @@ class LungMask:
 
     @staticmethod
     def reshape_mask(mask, tbox, origsize):
-        print(mask.shape)
-        exit()
         res = np.ones(origsize) * 0
         resize = [tbox[2] - tbox[0], tbox[3] - tbox[1]]
         imgres = ndimage.zoom(mask, resize / np.asarray(mask.shape), order=0)
@@ -163,24 +161,22 @@ class LungMask:
             output = self.model(x)
             pls = torch.max(output, 1)[1].detach().cpu().numpy().astype(np.uint8)
             prediction = np.vstack((prediction, pls))
-        outmask = self.postprocess(prediction)
-        outmask = np.asarray([self.reshape_mask(outmask[i], xnew_box[i], image.shape) for i in range(outmask.shape[0])], dtype=np.uint8)
-        return outmask.astype(np.uint8)[0]
+        outmask = self.postprocess(prediction)[0]
+        outmask = np.asarray(self.reshape_mask(outmask, xnew_box, image.shape), dtype=np.uint8)
+        return outmask.astype(np.uint8)
 
 
 if __name__ == '__main__':
-    # import pydicom
     # import matplotlib.pyplot as plt
-    # path = 'G:\\datasets\\kaggle\\osic-pulmonary-fibrosis-progression\\train\\ID00130637202220059448013\\19.dcm'
-    # dset = sitk.ReadImage(path)
-    # data = sitk.GetArrayFromImage(dset)[0]
-    # # dset = pydicom.filereader.dcmread(path)
-    # # data = dset.pixel_array
     # lung_mask = LungMask()
-    # mask = lung_mask.apply(data)
-    # plt.subplot(121)
-    # plt.imshow(data)
-    # plt.subplot(122)
-    # plt.imshow(mask)
+    # for i in range(4):
+    #     path = 'G:\\datasets\\kaggle\\osic-pulmonary-fibrosis-progression\\train\\ID00130637202220059448013\\%s.dcm' % (i*3+10)
+    #     dset = sitk.ReadImage(path)
+    #     data = sitk.GetArrayFromImage(dset)[0]
+    #     mask = lung_mask.apply(data)
+    #     plt.subplot('24%s' % (i*2+1))
+    #     plt.imshow(data)
+    #     plt.subplot('24%s' % (i*2+2))
+    #     plt.imshow(mask)
     # plt.show()
     pass

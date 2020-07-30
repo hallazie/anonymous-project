@@ -23,42 +23,6 @@ class Masking:
     def __init__(self):
         self.mask_model = mask.get_model('unet', 'LTRCLobes')
 
-    @staticmethod
-    def linear_interpolation(source, target):
-        """
-        对FVC等sequence线性插值，填满weeks对应的数据
-        :param source:
-        :param target:
-        :return: 插值后的FVC list
-        """
-        if len(source) < 2:
-            return target
-        interpolated = []
-        min_, max_ = min(source), max(source)
-        for i in range(len(source) - 1):
-            h, t = source[i], source[i + 1]
-            interpolated.append(target[i])
-            step = (target[i + 1] - target[i]) / float(t - h)
-            for j in range(t - h):
-                interpolated.append(step * (j + 1) + target[i])
-        return interpolated
-
-    @staticmethod
-    def polynomial_interpolation(source, target, power=POLYNOMIAL_INTERPOLATION_POWER):
-        """
-        多项式曲线拟合得到插值结果
-        :param source:
-        :param target:
-        :param power: 插值的次方数
-        :return: 插值结果、插值与原值的sqrt
-        """
-        z = np.polyfit(source, target, power)
-        poly = np.poly1d(z)
-        interpolated = poly(source)
-        min_ = min(source)
-        avg_ = sum([np.sqrt(np.abs(interpolated[i] - target[i])) for i, x in enumerate(source)]) / float(len(source))
-        return interpolated, avg_
-
     def lung_masking(self, image, vol_postprocessing=True):
         segmentation = mask.apply(image, self.mask_model, volume_postprocessing=vol_postprocessing)
         return segmentation

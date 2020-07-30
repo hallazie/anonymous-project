@@ -9,7 +9,7 @@ import sys
 from tqdm import tqdm
 import skimage
 import logging
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO)
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -81,7 +81,7 @@ def apply(image, model=None, force_cpu=False, batch_size=20, volume_postprocessi
                 print(x.shape, np.max(x), np.min(x), np.mean(x))
             pls = torch.max(prediction, 1)[1].detach().cpu().numpy().astype(np.uint8)
             timage_res = np.vstack((timage_res, pls))
-            plt.show()
+            # plt.show()
 
     # postprocessing includes removal of small connected components, hole filling and mapping of small components to
     # neighbors

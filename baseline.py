@@ -29,7 +29,7 @@ class Baseline:
         self._load_basic('data/train.csv', self.trainset)
         self._load_basic('data/test.csv', self.testset)
         # self.x_train, self.y_train, self.x_val, self.y_val = self.loader.get_dataset(fold=0.9)
-        self.x_train, self.y_train, self.x_val, self.y_val = self.loader.get_dataset_with_ct(bins=20, fold=0.9)
+        self.x_train, self.y_train, self.x_val, self.y_val = self.loader.get_dataset_with_ct(bins=50, fold=0.9)
         # self.x_train, self.y_train, self.uid_train, self.x_val, self.y_val, self.uid_val = self.loader.get_dataset_with_uid(fold=0.9)
         logger.info('training size: %s, %s, validation size: %s, %s' % (str(self.x_train.shape), str(self.y_train.shape), str(self.x_val.shape), str(self.y_val.shape)))
 
@@ -101,7 +101,8 @@ class Baseline:
         with 32*32 ct feature: *
         with only meta feature: -6.385669612878189
         with 32*32 ct feature samples in even 10 bins: -6.256543006505297
-        with 32*32 ct feature samples in even 20 bins: -6.255453477123299
+        with 32*32 ct feature samples in even 20 bins: -6.261188326751937
+        with 32*32 ct feature samples in even 20 bins: -6.320450703147999
         :return:
         """
         # self._baseline_xgboost()

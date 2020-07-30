@@ -9,7 +9,7 @@ from config import logger, DATA_PATH_ROOT, SYS_PATH_SEP
 from ct.process import processor
 from utils.common import normalize_matrix
 
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import pydicom
 import numpy as np
 import os
@@ -81,11 +81,11 @@ class Loader:
         image = image_list[random.randint(0, len(image_list)-1)].pixel_array
         image = normalize_matrix(image, expand_factor=255)
         image = np.uint8(image)
-        plt.subplot('121')
-        plt.imshow(image)
-        plt.subplot('122')
-        plt.imshow(processor.edge_detection(image, 'canny', thresh1=100, thresh2=200))
-        plt.show()
+        # plt.subplot('121')
+        # plt.imshow(image)
+        # plt.subplot('122')
+        # plt.imshow(processor.edge_detection(image, 'canny', thresh1=100, thresh2=200))
+        # plt.show()
 
 
 loader = Loader()
