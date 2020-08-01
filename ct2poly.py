@@ -5,7 +5,7 @@
 # @time: 2020/8/1 17:19
 # @desc:
 
-from model.ct2polyfit import CT2PolyModel
+from model.ct2polyfit_model import CT2PolyModel
 from utils.dataloader import PolynomialFitRegressionDataset
 from config import logger
 
@@ -25,8 +25,8 @@ class CT2PolynomialFit:
         self.lr = 1e-3
         self.wd = 1e-4
         self.bs = 8
-        self.ep = 1000
-        self.checkpoint_path = 'checkpoint/ct2poly-%s.pkl' % datetime.date.today()
+        self.ep = 2500
+        self.checkpoint_path = 'checkpoints/ct2poly-%s.pkl' % datetime.date.today()
         self._init_data()
         self._init_model()
 
@@ -44,14 +44,14 @@ class CT2PolynomialFit:
 
     def _save_checkpoint(self):
         torch.save(self.model.state_dict(), self.checkpoint_path)
-        logger.info('checkpoint [%s] saved') % self.checkpoint_path
+        logger.info('checkpoint [%s] saved' % self.checkpoint_path)
 
     def train(self):
         for e in range(self.ep):
             for i, (x, y) in enumerate(self.loader):
-                x = torch.from_numpy(x).to(self.device)
-                y = torch.from_numpy(y).to(self.device)
-                p = self.model(x)
+                x = x.to(self.device)
+                y = y.to(self.device).float()
+                p = self.model(x)[:, :, 0, 0].float()
                 loss = self.criterion(p, y)
                 self.optimizer.zero_grad()
                 loss.backward()

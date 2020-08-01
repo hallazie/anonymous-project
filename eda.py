@@ -58,7 +58,7 @@ class EDA:
                 continue
             self.test_user_dirs.append(path)
 
-    def _visualize_random_single(self):
+    def _visualize_random_single_mask(self):
         d_idx = random.randint(0, len(self.train_user_dirs))
         f_list = os.listdir(self.train_user_dirs[d_idx])
         f_idx = random.randint(0, len(f_list))
@@ -73,6 +73,23 @@ class EDA:
         plt.imshow(dset.pixel_array, cmap='gray')
         plt.subplot(122)
         plt.imshow(mask)
+        plt.show()
+
+    def _visualize_random_single(self):
+        d_idx = random.randint(0, len(self.train_user_dirs))
+        f_list = os.listdir(self.train_user_dirs[d_idx])
+        f_idx = random.randint(0, len(f_list))
+        # path = os.path.join(self.train_user_dirs[d_idx], f_list[f_idx])
+        import torch
+        path = 'G:\\datasets\\kaggle\\osic-pulmonary-fibrosis-progression\\train\\ID00130637202220059448013\\19.dcm'
+        dset = pydicom.filereader.dcmread(path)
+        array = dset.pixel_array
+        print(np.typename, np.max(array), np.mean(array), np.min(array))
+        array = array.astype('int16')
+        t = torch.from_numpy(array)
+        print(np.typename, np.max(array), np.mean(array), np.min(array))
+        print(t.max(), t.min())
+        plt.imshow(array, cmap='gray')
         plt.show()
 
     def _visualize_random_sequence(self):
@@ -149,7 +166,7 @@ class EDA:
     def run(self):
         # self._visualize_all_sequence()
         # self._plot_all_sequence()
-        self._fit_all_fvc_curve()
+        self._visualize_random_single()
 
 
 if __name__ == '__main__':

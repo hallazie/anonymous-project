@@ -5,7 +5,7 @@
 # @time: 2020/7/14 0:23
 # @desc:
 
-from config import RANDOM_STATE, logger
+from config import RANDOM_STATE, TEST_UID, logger
 from ct.embedding import embedding
 from ct.loader import loader
 from ct.transform import transform_feature
@@ -16,6 +16,7 @@ from collections import defaultdict
 from torch.utils.data import DataLoader, Dataset
 
 import matplotlib.pyplot as plt
+import json
 import cv2
 import numpy as np
 import pandas as pd
@@ -131,17 +132,19 @@ class AutoEncoderDataLoader:
 
 
 class PolynomialFitRegressionDataset(Dataset):
-    def __init__(self, bins=16):
+    def __init__(self, bins=16, meta_path='checkpoints/polynomial-pow3.json'):
         super(PolynomialFitRegressionDataset, self).__init__()
+        self.test_uid = TEST_UID
         self.bins = bins
+        self.meta_path = meta_path
         self.ct_size = (512, 512)
         self.data = defaultdict(list)
         self.label = {}
         self.train_path = get_abs_path(__file__, -2, 'data', 'train.csv')
         self.power = 3
         self._init_meta()
-        self._init_ct()
         self._init_label()
+        self._init_ct()
         self._init_dataset()
 
     def _init_meta(self):
@@ -149,6 +152,8 @@ class PolynomialFitRegressionDataset(Dataset):
         header_idx = {k: i for i, k in enumerate(df.columns)}
         for row in df.values:
             uid = row[header_idx['Patient']]
+            if uid in self.test_uid:
+                continue
             week = row[header_idx['Weeks']]
             fvc = row[header_idx['FVC']]
             percent = row[header_idx['Percent']]
@@ -160,15 +165,17 @@ class PolynomialFitRegressionDataset(Dataset):
     def _init_ct(self):
         self.ct_feature = {}
         for i, uid in enumerate(self.data):
+            if uid in self.test_uid:
+                continue
             try:
                 path_list = loader.fetch_path_by_uid(uid)
                 sequence = [pydicom.filereader.dcmread(x) for x in path_list]
                 sequence = sorted(sequence, key=lambda x: x.ImagePositionPatient[2])
                 sequence = sample_array_to_bins(sequence, self.bins, strict=True)
-                sequence = [matrix_resize(x.pixel_array, self.ct_size) for x in sequence]
+                sequence = [matrix_resize(x.pixel_array.astype('float32'), self.ct_size) for x in sequence]
                 seq_size = len(sequence)
                 for i in range(self.bins - seq_size):
-                    sequence.append(np.zeros(self.ct_size))
+                    sequence.append(np.zeros(self.ct_size, dtype='float32'))
                 # plt.figure(figsize=(20, 12))
                 # for i in range(4):
                 #     plt.subplot('24%s' % (i*2+1))
@@ -184,9 +191,30 @@ class PolynomialFitRegressionDataset(Dataset):
 
     def _init_label(self):
         for uid in self.data:
+            if uid in self.test_uid:
+                continue
             x, y = [e[0] for e in self.data[uid]], [e[1] for e in self.data[uid]]
             z = self._get_fvc_curve_polynomial_coefficient(x, y)
             self.label[uid] = z
+        c0 = np.array([x[0] for x in self.label.values()])
+        c1 = np.array([x[1] for x in self.label.values()])
+        c2 = np.array([x[2] for x in self.label.values()])
+        c3 = np.array([x[3] for x in self.label.values()])
+        self.avg = [np.mean(c0), np.mean(c1), np.mean(c2), np.mean(c3)]
+        self.std = [np.std(c0), np.std(c1), np.std(c2), np.std(c3)]
+        with open(self.meta_path, 'w', encoding='utf-8') as f:
+            json.dump({
+                'avg': self.avg,
+                'std': self.std,
+                'data-size': len(c0),
+            }, f, ensure_ascii=False, indent=4)
+        for uid, val in self.label.items():
+            self.label[uid] = np.array([
+                (val[0] - self.avg[0]) / self.std[0],
+                (val[1] - self.avg[1]) / self.std[1],
+                (val[2] - self.avg[2]) / self.std[2],
+                (val[3] - self.avg[3]) / self.std[3],
+            ])
 
     def _init_dataset(self):
         self.uid = sorted(set(self.ct_feature.keys()) & set(self.label.keys()))

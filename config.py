@@ -22,4 +22,12 @@ DATA_PATH_ROOT = 'g:\\datasets\\kaggle\\osic-pulmonary-fibrosis-progression'
 
 SYS_PATH_SEP = '/'
 
+TEST_UID = [
+            'ID00419637202311204720264',
+            'ID00421637202311550012437',
+            'ID00422637202311677017371',
+            'ID00423637202312137826377',
+            'ID00426637202313170790466'
+        ]
+
 logger.info('testing info logger...')
