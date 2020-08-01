@@ -20,8 +20,9 @@ import json
 import cv2
 import numpy as np
 import pandas as pd
-import traceback
+import os
 import pydicom
+import pickle as pkl
 
 
 class FVCPredictDataLoader:
@@ -132,15 +133,17 @@ class AutoEncoderDataLoader:
 
 
 class PolynomialFitRegressionDataset(Dataset):
-    def __init__(self, bins=16, meta_path='checkpoints/polynomial-pow3.json'):
+    def __init__(self, bins=16, train=True, meta_path='checkpoints/polynomial-pow3.json'):
         super(PolynomialFitRegressionDataset, self).__init__()
         self.test_uid = TEST_UID
         self.bins = bins
+        self.train = train
         self.meta_path = meta_path
         self.ct_size = (512, 512)
         self.data = defaultdict(list)
         self.label = {}
         self.train_path = get_abs_path(__file__, -2, 'data', 'train.csv')
+        self.cache_path = get_abs_path(__file__, -2, 'data', 'ct-scan-cache.pkl')
         self.power = 3
         self._init_meta()
         self._init_label()
@@ -152,7 +155,7 @@ class PolynomialFitRegressionDataset(Dataset):
         header_idx = {k: i for i, k in enumerate(df.columns)}
         for row in df.values:
             uid = row[header_idx['Patient']]
-            if uid in self.test_uid:
+            if (uid in self.test_uid and self.train) or (uid not in self.test_uid and not self.train):
                 continue
             week = row[header_idx['Weeks']]
             fvc = row[header_idx['FVC']]
@@ -164,8 +167,12 @@ class PolynomialFitRegressionDataset(Dataset):
 
     def _init_ct(self):
         self.ct_feature = {}
+        if os.path.exists(self.cache_path):
+            with open(self.cache_path, 'rb') as f:
+                logger.info('using cached ct-feature pickle')
+                self.ct_feature = pkl.load(f)
         for i, uid in enumerate(self.data):
-            if uid in self.test_uid:
+            if (uid in self.test_uid and self.train) or (uid not in self.test_uid and not self.train):
                 continue
             try:
                 path_list = loader.fetch_path_by_uid(uid)
@@ -187,15 +194,19 @@ class PolynomialFitRegressionDataset(Dataset):
                 self.ct_feature[uid] = np.array(sequence)
             except Exception as e:
                 logger.error(e)
+        with open(self.cache_path, 'wb') as f:
+            pkl.dump(self.ct_feature, f)
         logger.info('ct-scan feature loading finished')
 
     def _init_label(self):
         for uid in self.data:
-            if uid in self.test_uid:
+            if (uid in self.test_uid and self.train) or (uid not in self.test_uid and not self.train):
                 continue
             x, y = [e[0] for e in self.data[uid]], [e[1] for e in self.data[uid]]
             z = self._get_fvc_curve_polynomial_coefficient(x, y)
             self.label[uid] = z
+        if not self.train:
+            return
         c0 = np.array([x[0] for x in self.label.values()])
         c1 = np.array([x[1] for x in self.label.values()])
         c2 = np.array([x[2] for x in self.label.values()])
