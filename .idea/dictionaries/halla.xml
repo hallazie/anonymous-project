@@ -2,6 +2,7 @@
   <dictionary name="halla">
     <words>
       <w>bodymask</w>
+      <w>conv</w>
       <w>dataset</w>
       <w>dset</w>
       <w>postprocess</w>

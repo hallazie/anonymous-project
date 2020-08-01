@@ -4,20 +4,23 @@
 # @file: dataloader.py
 # @time: 2020/7/14 0:23
 # @desc:
-import os
-from collections import defaultdict
-
-import cv2
-import numpy as np
-import pandas as pd
-import pydicom
-from sklearn.utils import shuffle
 
 from config import RANDOM_STATE, logger
 from ct.embedding import embedding
 from ct.loader import loader
 from ct.transform import transform_feature
-from utils.common import get_abs_path, sample_array_to_bins
+from utils.common import get_abs_path, sample_array_to_bins, matrix_resize
+
+from sklearn.utils import shuffle
+from collections import defaultdict
+from torch.utils.data import DataLoader, Dataset
+
+import matplotlib.pyplot as plt
+import cv2
+import numpy as np
+import pandas as pd
+import traceback
+import pydicom
 
 
 class FVCPredictDataLoader:
@@ -127,18 +130,23 @@ class AutoEncoderDataLoader:
         super(AutoEncoderDataLoader, self).__init__()
 
 
-class PolynomialFitRegressionDataLoader:
-    def __init__(self):
-        super(PolynomialFitRegressionDataLoader, self).__init__()
+class PolynomialFitRegressionDataset(Dataset):
+    def __init__(self, bins=16):
+        super(PolynomialFitRegressionDataset, self).__init__()
+        self.bins = bins
+        self.ct_size = (512, 512)
+        self.data = defaultdict(list)
+        self.label = {}
         self.train_path = get_abs_path(__file__, -2, 'data', 'train.csv')
         self.power = 3
         self._init_meta()
-        self._init_ct(10)
+        self._init_ct()
+        self._init_label()
+        self._init_dataset()
 
     def _init_meta(self):
         df = pd.read_csv(self.train_path)
         header_idx = {k: i for i, k in enumerate(df.columns)}
-        self.data = defaultdict(list)
         for row in df.values:
             uid = row[header_idx['Patient']]
             week = row[header_idx['Weeks']]
@@ -149,32 +157,53 @@ class PolynomialFitRegressionDataLoader:
             gender_ = 0 if gender == 'Male' else 1
             self.data[uid].append((week, fvc, percent, age, gender_))
 
-    def _init_ct(self, bins):
+    def _init_ct(self):
         self.ct_feature = {}
-        import matplotlib.pyplot as plt
-        for uid in self.data:
+        for i, uid in enumerate(self.data):
             try:
                 path_list = loader.fetch_path_by_uid(uid)
                 sequence = [pydicom.filereader.dcmread(x) for x in path_list]
                 sequence = sorted(sequence, key=lambda x: x.ImagePositionPatient[2])
-                sequence = sample_array_to_bins(sequence, 16, strict=True)
-                sequence = [x.pixel_array for x in sequence]
-                plt.figure(figsize=(20, 12))
-                for i in range(4):
-                    plt.subplot('24%s' % (i*2+1))
-                    plt.imshow(sequence[i*4])
-                    plt.subplot('24%s' % (i*2+2))
-                    plt.imshow(sequence[i*4+1])
-                plt.savefig('../output/bin/%s-plot.png' % uid)
-                print('%s save finished' % uid)
+                sequence = sample_array_to_bins(sequence, self.bins, strict=True)
+                sequence = [matrix_resize(x.pixel_array, self.ct_size) for x in sequence]
+                seq_size = len(sequence)
+                for i in range(self.bins - seq_size):
+                    sequence.append(np.zeros(self.ct_size))
+                # plt.figure(figsize=(20, 12))
+                # for i in range(4):
+                #     plt.subplot('24%s' % (i*2+1))
+                #     plt.imshow(sequence[i*4])
+                #     plt.subplot('24%s' % (i*2+2))
+                #     plt.imshow(sequence[i*4+1])
+                # plt.savefig('../output/bin/%s-plot.png' % uid)
+                # print('%s save finished' % uid)
+                self.ct_feature[uid] = np.array(sequence)
             except Exception as e:
                 logger.error(e)
         logger.info('ct-scan feature loading finished')
 
-    def get_fvc_curve_polynomial_coefficient(self, week_list, fvc_list):
+    def _init_label(self):
+        for uid in self.data:
+            x, y = [e[0] for e in self.data[uid]], [e[1] for e in self.data[uid]]
+            z = self._get_fvc_curve_polynomial_coefficient(x, y)
+            self.label[uid] = z
+
+    def _init_dataset(self):
+        self.uid = sorted(set(self.ct_feature.keys()) & set(self.label.keys()))
+        logger.info('total data size: %s' % len(self.uid))
+
+    def _get_fvc_curve_polynomial_coefficient(self, week_list, fvc_list):
         z = np.polyfit(week_list, fvc_list, self.power)
         return z
 
+    def __len__(self):
+        return len(self.uid)
+
+    def __getitem__(self, index):
+        uid = self.uid[index]
+        return self.ct_feature[uid], self.label[uid]
+
 
 if __name__ == '__main__':
-    poly_regression = PolynomialFitRegressionDataLoader()
+    poly_regression = PolynomialFitRegressionDataset()
+

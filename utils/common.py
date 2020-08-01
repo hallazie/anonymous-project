@@ -9,6 +9,7 @@ from config import *
 
 import os
 import numpy as np
+import cv2
 
 
 def normalize_vector(vector, max_=None, min_=None):
@@ -29,10 +30,23 @@ def get_abs_path(file_, idx, *args):
 
 
 def sample_array_to_bins(raw_list, bins, strict=False):
-    if len(raw_list) // bins <= 1 and not strict:
+    try:
+        if len(raw_list) // bins <= 1 and not strict:
+            return raw_list
+        step = math.ceil(len(raw_list) / float(bins))
+        new_list = [x for i, x in enumerate(raw_list) if i % step == 0]
+        rest = (len(new_list) - bins) // 2
+        if rest > 1:
+            return new_list[rest:bins+rest-1]
+        else:
+            return new_list
+    except Exception as e:
+        logger.error(e + ' %s %s' % (len(raw_list), bins))
         return raw_list
-    step = math.ceil(len(raw_list) / float(bins))
-    return [x for i, x in enumerate(raw_list) if i % step == 0][:bins]
+
+
+def matrix_resize(mat, size=(512, 512)):
+    return cv2.resize(mat, size, interpolation=cv2.INTER_CUBIC)
 
 
 def linear_interpolation(source, target):
