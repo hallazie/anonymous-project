@@ -172,6 +172,8 @@ class PolynomialFitRegressionDataset(Dataset):
                 logger.info('using cached ct-feature pickle')
                 self.ct_feature = pkl.load(f)
         for i, uid in enumerate(self.data):
+            # if i == 10:
+            #     break
             if (uid in self.test_uid and self.train) or (uid not in self.test_uid and not self.train):
                 continue
             try:
