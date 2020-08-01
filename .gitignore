@@ -1,9 +1,11 @@
 /.idea/*
 /data/*
-/model/*
+/__pycache__/*
 /checkpoints/*
 /output/*
 /.ipynb_checkpoints/*
+.idea
+__pycache__
 *.pyc
 *.ipynb
 *.pdf
