@@ -1,7 +1,7 @@
 # --*-- coding:utf-8 --*--
 # @author: Xiao Shanghua
 # @contact: hallazie@outlook.com
-# @file: eda.py
+# @file: common.py
 # @time: 2020/7/11 15:09
 # @desc:
 
@@ -166,7 +166,8 @@ class EDA:
     def run(self):
         # self._visualize_all_sequence()
         # self._plot_all_sequence()
-        self._visualize_random_single()
+        # self._visualize_random_single()
+        self._fit_all_fvc_curve()
 
 
 if __name__ == '__main__':
