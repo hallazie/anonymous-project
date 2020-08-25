@@ -242,7 +242,7 @@ class PolynomialFitRegressionDataset(Dataset):
 
     def __getitem__(self, index):
         uid = self.uid[index]
-        return self.ct_feature[uid], self.label[uid]
+        return self.ct_feature[uid], self.label[uid], uid
 
 
 if __name__ == '__main__':

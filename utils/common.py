@@ -6,6 +6,7 @@
 # @desc:
 
 from config import *
+from scipy import interpolate
 
 import os
 import numpy as np
@@ -84,6 +85,23 @@ def polynomial_interpolation(source, target, power=POLYNOMIAL_INTERPOLATION_POWE
     min_ = min(source)
     avg_ = sum([np.sqrt(np.abs(interpolated[i] - target[i])) for i, x in enumerate(source)]) / float(len(source))
     return interpolated, avg_
+
+
+def sci_interpolate(source, target, type_='b-spline'):
+    """
+    基于scipy.interpolate的插值
+    :param source:
+    :param target:
+    :param type_: b-spline, linear
+    :return:
+    """
+    source_fill = [i for i in range(min(source), max(source) + 1)]
+    if type_ == 'b-spline':
+        tck = interpolate.splrep(source, target)
+        return interpolate.splev(source_fill, tck)
+    elif type_ == 'linear':
+        f_linear = interpolate.interp1d(source, target)
+        return f_linear(source_fill)
 
 
 if __name__ == '__main__':

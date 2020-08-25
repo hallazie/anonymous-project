@@ -9,7 +9,7 @@ from config import logger, DATA_PATH_ROOT
 from ct.process import processor
 from ct.mask import masking
 from utils.image import normalize_image
-from utils.common import normalize_vector, polynomial_interpolation, linear_interpolation
+from utils.common import normalize_vector, polynomial_interpolation, linear_interpolation, sci_interpolate
 from collections import defaultdict
 
 import matplotlib.pyplot as plt
@@ -155,18 +155,19 @@ class EDA:
         for uid in self.data:
             fvc_list = [x[1] for x in self.data[uid]]
             week_list = [x[0] for x in self.data[uid]]
-            fvc_list_interpolated, div = polynomial_interpolation(week_list, fvc_list, power=3)
+            # fvc_list_interpolated, div = polynomial_interpolation(week_list, fvc_list, power=3)
+            fvc_list_interpolated = sci_interpolate(week_list, fvc_list)
             week_list_ = [i for i in range(min(week_list), max(week_list)+1)]
             plt.plot(week_list, fvc_list)
             plt.plot(week_list_, fvc_list_interpolated)
-            plt.savefig('output/fvc-curve/%s-plot-pow3.png' % uid)
+            plt.savefig('output/fvc-curve/%s-plot-bi-spline.png' % uid)
             print(uid, 'polynomial interpolation finished')
             plt.clf()
 
     def run(self):
         # self._visualize_all_sequence()
         # self._plot_all_sequence()
-        self._visualize_random_single()
+        self._fit_all_fvc_curve()
 
 
 if __name__ == '__main__':
