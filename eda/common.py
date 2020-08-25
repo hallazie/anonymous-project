@@ -1,7 +1,7 @@
 # --*-- coding:utf-8 --*--
 # @author: Xiao Shanghua
 # @contact: hallazie@outlook.com
-# @file: eda.py
+# @file: common.py
 # @time: 2020/7/11 15:09
 # @desc:
 
