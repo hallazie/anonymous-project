@@ -23,6 +23,7 @@ class TrigonometricCurveFit:
         self.wc1 = None
         self.wc2 = None
         self.bc1 = None
+        self.bias = None
 
     def fit(self, source):
         """
@@ -44,6 +45,7 @@ class TrigonometricCurveFit:
         self.wc1 = [np.random.rand() for i in range(self.size)]
         self.wc2 = [np.random.rand() for i in range(self.size)]
         self.bc1 = [np.random.rand() for i in range(self.size)]
+        self.bias = np.random.rand()
 
     def optimize(self, x_list, y_list, iter_nums=100, lr=0.005):
         """
@@ -75,7 +77,8 @@ class TrigonometricCurveFit:
                 self.wc1 = [self.wc1[i] - lr * d * d_wc1[i] for i in range(self.size)]
                 self.wc2 = [self.wc2[i] - lr * d * d_wc2[i] for i in range(self.size)]
                 self.bc1 = [self.bc1[i] - lr * d * d_bc1[i] for i in range(self.size)]
-            print('current loss: %s' % (loss / self.size))
+                self.bias = self.bias - lr * d
+            print('%s current loss: %s' % (it, loss / self.size))
 
     def inspect(self):
         print('---------- params ----------')
@@ -83,23 +86,21 @@ class TrigonometricCurveFit:
             print('%s·Sin(%s·x + %s) + %s·Cos(%s·x + %s)' % (round(self.ws2[i], 4), round(self.ws1[i], 4), round(self.bs1[i], 4), round(self.wc2[i], 4), round(self.wc1[i], 4), round(self.bc1[i], 4)))
 
     def _tri(self, x):
-        y = sum(
-            [self.ws2[i] * np.sin(self.ws1[i] * x + self.bs1[i]) + self.wc2[i] * np.cos(self.wc1[i] * x + self.bc1[i])
-             for i in range(self.size)])
+        y = sum([self.ws2[i] * np.sin(self.ws1[i] * x + self.bs1[i]) + self.wc2[i] * np.cos(self.wc1[i] * x + self.bc1[i]) for i in range(self.size)]) + self.bias
         return y
 
 
 if __name__ == '__main__':
     tri = TrigonometricCurveFit()
-    par = [1. / i for i in range(1, 10)]
+    par = [1. / i for i in range(1, 64)]
     y = [0.5825, 0.5571, 0.5186, 0.5395, 0.5206, 0.5287, 0.5033, 0.5193, 0.5176]
-    # y = [y[0]] * 10 + y + [y[-1]] * 10
+    y = y * 1
     x = [i for i in range(len(y))]
     r = [i / 100. for i in range(len(x) * 100)]
-    # s = [e - len(x) for e in r] + r + [e + len(x) for e in r]
-    s = r
+    s = [e - len(x) for e in r] + r + [e + len(x) for e in r]
+    # s = r
     tri.build(par)
-    tri.optimize(x, y, iter_nums=1000, lr=0.001)
+    tri.optimize(x, y, iter_nums=500, lr=0.001)
     tri.inspect()
     t = tri.fit(s)
     plt.plot(x, y)
