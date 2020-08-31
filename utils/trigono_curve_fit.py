@@ -59,12 +59,11 @@ class TrigonometricCurveFit:
             d_wc1 = [0 for i in range(self.size)]
             d_wc2 = [0 for i in range(self.size)]
             d_bc1 = [0 for i in range(self.size)]
-            d = 0
             loss = 0
             for x, y in zip(x_list, y_list):
                 p = self._tri(x)
                 loss += (p - y) ** 2
-                d += 2 * (p - y)
+                d = 2 * (p - y)
                 d_ws1 = [np.cos(self.ws1[i] * x + self.bs1[i]) * self.ws2[i] * x for i in range(self.size)]
                 d_ws2 = [np.sin(self.ws1[i] * x + self.bs1[i]) for i in range(self.size)]
                 d_bs1 = [np.cos(self.ws1[i] * x + self.bs1[i]) * self.ws2[i] for i in range(self.size)]
@@ -92,15 +91,15 @@ class TrigonometricCurveFit:
 
 if __name__ == '__main__':
     tri = TrigonometricCurveFit()
-    par = [1. / i for i in range(1, 64)]
+    par = [1. / i for i in range(1, 32)]
     y = [0.5825, 0.5571, 0.5186, 0.5395, 0.5206, 0.5287, 0.5033, 0.5193, 0.5176]
     y = y * 1
     x = [i for i in range(len(y))]
     r = [i / 100. for i in range(len(x) * 100)]
-    s = [e - len(x) for e in r] + r + [e + len(x) for e in r]
-    # s = r
+    # s = [e - len(x) for e in r] + r + [e + len(x) for e in r]
+    s = r
     tri.build(par)
-    tri.optimize(x, y, iter_nums=500, lr=0.001)
+    tri.optimize(x, y, iter_nums=1000, lr=0.001)
     tri.inspect()
     t = tri.fit(s)
     plt.plot(x, y)
