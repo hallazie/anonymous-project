@@ -22,14 +22,16 @@ class AlbitraryCurveFit:
         return self._derive
 
     @base.setter
-    def base(self, callback):
-        if not callable(callback):
-            raise TypeError('base should be a callable')
-        self._base = callback
+    def base(self, call):
+        if not callable(call):
+            raise TypeError('base function should be a callable')
+        self._base = call
 
     @derive.setter
-    def derive(self, drive):
-        self._derive = drive
+    def derive(self, derive):
+        if type(derive) is not list or not all([callable(d) for d in derive]):
+            raise TypeError('derive function should be a list of callable objs')
+        self._derive = derive
 
     def build(self, base, derives, coeff_size, expansion_size):
         self.base = base
@@ -99,11 +101,11 @@ def test_sigmoid():
         lambda p, x: ((1 + np.e ** (p[0] * x)) ** -2) * p[2] * -1,
         lambda p, x: (1 + np.e ** (p[0] * x)) ** -1
     ]
-    fitter.build(f, d_list, 3, 128)
+    fitter.build(f, d_list, 3, 256)
     y_list = [0.5825, 0.5571, 0.5186, 0.5395, 0.5206, 0.5287, 0.5033, 0.5193, 0.5176]
     x_list = [i for i in range(len(y_list))]
     z_list = [i / 100. for i in range(len(x_list) * 100)]
-    fitter.optimize(x_list, y_list, iter_num=5000, lr=0.01)
+    fitter.optimize(x_list, y_list, iter_num=2000, lr=0.01)
     p_list = fitter.fit(z_list)
     plt.plot(x_list, y_list)
     plt.plot(z_list, p_list)
