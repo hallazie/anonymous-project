@@ -1,6 +1,8 @@
 # --*-- coding:utf-8 --*--
 # @author: xiao shanghua
 
+from config import logger
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -41,11 +43,16 @@ class AlbitraryCurveFit:
         for i in range(self.e_size):
             self.coeff.append([np.random.rand() for j in range(self.c_size)])
 
+    def flush(self):
+        self.e_size = None
+        self.c_size = None
+        self.coeff = []
+
     def forward(self, x):
         try:
             return sum([self.base(self.coeff[i], x) for i in range(self.e_size)])
         except OverflowError as oe:
-            print(oe)
+            logger.exception(oe)
             return 0
 
     def optimize(self, x_list, y_list, iter_num=1000, lr=0.001):
@@ -53,6 +60,7 @@ class AlbitraryCurveFit:
         use least square loss to optimize
         current only support online training, not batch training, or matrix calc
         """
+        vis_step = iter_num // 10
         for it in range(iter_num):
             loss = 0
             for x, y in zip(x_list, y_list):
@@ -64,11 +72,16 @@ class AlbitraryCurveFit:
                         for c in range(self.c_size):
                             self.coeff[e][c] -= self.derive[c](self.coeff[e], x) * lr * d
                 except OverflowError as oe:
-                    print(oe)
-            print('%sth iter with loss: %s' % ((it + 1), loss))
+                    logger.exception(oe)
+            if it % vis_step == 0:
+                logger.info(f'{it}th iter with loss: {loss}')
 
     def fit(self, source_list):
         return [self.forward(x) for x in source_list]
+
+    def inspect(self):
+        for x in self.coeff:
+            logger.info(x)
 
 
 def test_trigono():
@@ -87,6 +100,7 @@ def test_trigono():
     x_list = [i for i in range(len(y_list))]
     z_list = [i / 100. for i in range(len(x_list) * 100)]
     fitter.optimize(x_list, y_list, lr=0.001)
+    fitter.inspect()
     p_list = fitter.fit(z_list)
     plt.plot(x_list, y_list)
     plt.plot(z_list, p_list)
@@ -102,10 +116,14 @@ def test_sigmoid():
         lambda p, x: (1 + np.e ** (p[0] * x)) ** -1
     ]
     fitter.build(f, d_list, 3, 256)
-    y_list = [0.5825, 0.5571, 0.5186, 0.5395, 0.5206, 0.5287, 0.5033, 0.5193, 0.5176]
-    x_list = [i for i in range(len(y_list))]
-    z_list = [i / 100. for i in range(len(x_list) * 100)]
-    fitter.optimize(x_list, y_list, iter_num=2000, lr=0.01)
+    # y_list = [0.5825, 0.5571, 0.5186, 0.5395, 0.5206, 0.5287, 0.5033, 0.5193, 0.5176]
+    # x_list = [i for i in range(len(y_list))]
+    # z_list = [i / 100. for i in range(len(x_list) * 100)]
+    y_list = [0.859875904860393, 0.8839193381592549, 0.915460186142709, 0.905377456049638, 0.8815925542916241, 0.8989141675284391, 0.8451396070320579, 0.8650465356773529, 0.825491209927611]
+    x_list = [0, 1, 3, 5, 7, 13, 26, 37, 52]
+    z_list = [i / 100. for i in range(min(x_list) * 100, (max(x_list) + 1) * 100)]
+    fitter.optimize(x_list, y_list, iter_num=1000, lr=0.01)
+    fitter.inspect()
     p_list = fitter.fit(z_list)
     plt.plot(x_list, y_list)
     plt.plot(z_list, p_list)
