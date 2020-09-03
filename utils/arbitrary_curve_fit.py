@@ -131,7 +131,8 @@ def test_sigmoid():
 
 
 def test_tanh():
-    pass
+    fitter = AlbitraryCurveFit()
+    f = lambda p, x: p[0] * np.tanh(p[1] * x + p[2])
 
 
 if __name__ == '__main__':
