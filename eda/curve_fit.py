@@ -67,27 +67,26 @@ class EDA:
 
     def _fit_all_fvc_curve_with_seq(self):
         for i, uid in enumerate(self.data):
-            # if uid != 'ID00011637202177653955184':
-            #     continue
-            path = f'../output/model/checkpoint/{uid}.pkl'
-            fitter = build_sigmoid()
+            path = f'../output/model/checkpoint/0911/{uid}.pkl'
+            fitter = build_sigmoid(32)
             pct_list = [x[2] for x in self.data[uid]]
             week_list = [x[0] for x in self.data[uid]]
             week_list = [x - min(week_list) for x in week_list]
-            week_list_ = [i for i in range(min(week_list), max(week_list) + 1)]
-            fitter.optimize(week_list, pct_list, iter_num=10000, lr=0.005)
+            size = max(week_list) - min(week_list)
+            week_list_ = [i for i in range(min(week_list) - size, max(week_list) + size + 1)]
+            fitter.optimize(week_list, pct_list, iter_num=1000, lr=0.02)
             fitter.dump(path)
             pct_list_interpolated = fitter.fit(week_list_)
             plt.plot(week_list, pct_list)
             plt.plot(week_list_, pct_list_interpolated)
-            plt.savefig(f'../output/model/visualize/{uid}-plot-sigmoid.png')
+            plt.savefig(f'../output/model/visualize/0911/{uid}-plot-sigmoid.png')
             logger.info(f'{i}th {uid} polynomial interpolation finished')
             plt.clf()
 
     def _fit_all_fvc_curve_with_seq_pretrained(self):
         uid = 'ID00011637202177653955184'
         path = f'../output/model/{uid}.pkl'
-        fitter = build_sigmoid()
+        fitter = build_sigmoid(128)
         fitter.load(path)
         pct_list = [x[2] for x in self.data[uid]]
         week_list = [x[0] for x in self.data[uid]]

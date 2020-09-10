@@ -10,6 +10,9 @@ import numpy as np
 
 
 class AlbitraryCurveFit:
+    """
+    TODO 添加分段函数性质：y=f(x), x>=0; y=f(x0), x<0
+    """
     def __init__(self, _base=None, _derive=None):
         self._base = _base
         self._derive = _derive
@@ -78,6 +81,14 @@ class AlbitraryCurveFit:
             if it % vis_step == 0:
                 logger.info(f'{it}th iter with loss: {loss}')
 
+    def optimize_batch(self, x_list, y_list, iter_num=1000, lr=0.001, batch_size=10):
+        coeff = []
+        for i in range(batch_size):
+            self.coeff = [[np.random.rand() for j in range(len(self.coeff[0]))] for i in range(len(self.coeff))]
+            self.optimize(x_list, y_list, iter_num=iter_num, lr=lr)
+            coeff.append(sorted(self.coeff, key=lambda x: [x[j] for j in range(len(x))]))
+        self.coeff = list(np.mean(np.array(coeff), axis=0))
+
     def fit(self, source_list):
         return [self.forward(x) for x in source_list]
 
@@ -104,7 +115,7 @@ class AlbitraryCurveFit:
                 raise TypeError('init fitter failed, type confirmation failed')
 
 
-def build_trigono():
+def build_trigono(size=64):
     fitter = AlbitraryCurveFit()
     f = lambda p, x: p[0] * np.sin(p[1] * x + p[2]) + p[3] * np.cos(p[4] * x + p[5])
     d_list = [
@@ -115,11 +126,11 @@ def build_trigono():
         lambda p, x: p[3] * np.sin(p[4] * x + p[5]) * x * -1,
         lambda p, x: p[3] * np.sin(p[4] * x + p[5]) * -1
     ]
-    fitter.build(f, d_list, 6, 20)
+    fitter.build(f, d_list, 6, size)
     return fitter
 
 
-def build_sigmoid():
+def build_sigmoid(size=64):
     fitter = AlbitraryCurveFit()
     f = lambda p, x: ((1 + np.e ** (p[0] * x + p[1])) ** -1) * p[2]
     d_list = [
@@ -127,11 +138,11 @@ def build_sigmoid():
         lambda p, x: ((1 + np.e ** (p[0] * x + p[1])) ** -2) * np.e ** (p[0] * x + p[1]) * p[2] * -1,
         lambda p, x: (1 + np.e ** (p[0] * x + p[1])) ** -1
     ]
-    fitter.build(f, d_list, 3, 32)
+    fitter.build(f, d_list, 3, size)
     return fitter
 
 
-def build_tanh():
+def build_tanh(size=64):
     fitter = AlbitraryCurveFit()
     f = lambda p, x: p[0] * np.tanh(p[1] * x + p[2])
     d_list = [
@@ -139,7 +150,7 @@ def build_tanh():
         lambda p, x: p[0] * (1 - np.tanh(p[1] * x + p[2]) ** 2) * x,
         lambda p, x: p[0] * (1 - np.tanh(p[1] * x + p[2]) ** 2)
     ]
-    fitter.build(f, d_list, 3, 128)
+    fitter.build(f, d_list, 3, size)
     return fitter
 
 
@@ -156,7 +167,7 @@ def test():
 
     z_list = [i / 100. for i in range(min(x_list) * 100, (max(x_list) + 1) * 200)]
     for i in range(10):
-        fitter.optimize(x_list, y_list, iter_num=1000, lr=0.005)
+        fitter.optimize_batch(x_list, y_list, iter_num=1000, lr=0.005)
         fitter.inspect()
         p_list = fitter.fit(z_list)
         plt.plot(x_list, y_list)
