@@ -2,9 +2,9 @@
 # @author: xiao shanghua
 
 from config import logger
+from utils.arbitrary_curve_fit_builder import *
 
 import matplotlib.pyplot as plt
-import pickle as pkl
 import dill
 import numpy as np
 
