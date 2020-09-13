@@ -6,7 +6,7 @@
 # @desc:
 
 from model.ct2polyfit_model import CT2PolyModel
-from dataloader.polyfit_regression_loader import PolynomialFitRegressionDataset
+from dataloader.arbitraryfit_loader import ArbitraryFitRegressionDataset
 from utils.evaluate import evaluate_on_array
 from config import logger
 
@@ -34,12 +34,12 @@ class CT2PolynomialFit:
         self.wd = 1e-4
         self.bs = 8
         self.ep = 10000
-        self.checkpoint_path = 'checkpoints/ct2poly-%s.pkl' % datetime.date.today()
+        self.checkpoint_path = 'checkpoints/ct2arbi-%s.pkl' % datetime.date.today()
         self.meta_path = 'checkpoints/polynomial-pow3.json'
         self.label_path = 'data/train.csv'
 
     def _init_data(self, train=True):
-        self.train_db = PolynomialFitRegressionDataset(bins=self.bins, train=train)
+        self.train_db = ArbitraryFitRegressionDataset(bins=self.bins, train=train)
         self.loader = DataLoader(self.train_db, batch_size=self.bs, shuffle=True)
 
     def _init_label(self):

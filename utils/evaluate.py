@@ -7,10 +7,9 @@
 
 from utils.criterion import laplace_log_likelihood
 from collections import defaultdict
-from utils.arbitrary_curve_fit import ArbitraryCurveFit, build_sigmoid
+from utils.arbitrary_curve_fit_builder import *
 
 import pandas as pd
-import numpy as np
 
 
 def evaluate_on_testset(output):
@@ -68,8 +67,8 @@ def evaluate_on_curve_fit():
         for x in gt:
             ground_truth[f'{uid}_{x[0]}'] = x[1]
         try:
-            fitter = build_sigmoid(16)
-            fitter.load(f'../output/model/checkpoint/{uid}.pkl')
+            fitter = build_sigmoid(32)
+            fitter.load(f'../output/model/checkpoint/0913/{uid}.pkl')
         except:
             continue
         pr = fitter.fit([i for i in range(100)])

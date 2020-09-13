@@ -7,7 +7,7 @@
 
 from collections import defaultdict
 from utils.evaluate import evaluate_on_testset, evaluate_on_array
-from utils.dataloader import FVCPredictDataLoader
+from dataloader.fvc_simple_loader import FVCPredictDataLoader
 from lightgbm import LGBMRegressor
 from xgboost import XGBRegressor
 from config import logger
