@@ -7,7 +7,7 @@
 
 from utils.criterion import laplace_log_likelihood
 from collections import defaultdict
-from utils.arbitrary_curve_fit import AlbitraryCurveFit, build_sigmoid
+from utils.arbitrary_curve_fit import ArbitraryCurveFit, build_sigmoid
 
 import pandas as pd
 import numpy as np

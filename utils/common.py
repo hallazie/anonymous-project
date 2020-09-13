@@ -38,7 +38,7 @@ def sample_array_to_bins(raw_list, bins, strict=False):
         new_list = [x for i, x in enumerate(raw_list) if i % step == 0]
         rest = (len(new_list) - bins) // 2
         if rest > 1:
-            return new_list[rest:bins+rest-1]
+            return new_list[rest:bins + rest - 1]
         else:
             return new_list
     except Exception as e:
@@ -70,6 +70,43 @@ def linear_interpolation(source, target):
     return interpolated
 
 
+def linear_fill(x, y, target_size=50):
+    """
+    将x、y填充到target size，x=week list，y=fvc list
+    :param x:
+    :param y:
+    :param target_size:
+    :return:
+    """
+
+    def closest(e, lst):
+        if any([True if (e - ee) == 0 else False for ee in lst]):
+            return 0, 0
+        cl, cr = lst[0], lst[-1]
+        for t in lst:
+            if t < e and abs(t-e) <= abs(cl-e):
+                cl = t
+            if t > e and abs(t-e) <= abs(cr-e):
+                cr = t
+        return cl, cr
+
+    if len(x) >= target_size:
+        return x, y
+    data = {k: v for k, v in zip(x, y)}
+    step = abs(max(x) - min(x)) / float(target_size)
+    fx = [e * step + min(x) for e in range(target_size)]
+    pred = {}
+    for e in fx:
+        xl, xr = closest(e, x)
+        if xl == xr:
+            continue
+        yl, yr = data[xl], data[xr]
+        pred[e] = (yr - yl) * ((e - xl) / float(xr - xl)) + yl
+    xx = sorted(list(data.keys()) + list(pred.keys()))
+    yy = [data[t] if t in data else pred[t] for t in xx]
+    return xx, yy
+
+
 def polynomial_interpolation(source, target, power=POLYNOMIAL_INTERPOLATION_POWER):
     """
     多项式曲线拟合得到插值结果
@@ -79,7 +116,7 @@ def polynomial_interpolation(source, target, power=POLYNOMIAL_INTERPOLATION_POWE
     :return: 插值结果、插值与原值的sqrt
     """
     z = np.polyfit(source, target, power)
-    source_ = [i for i in range(min(source), max(source)+1)]
+    source_ = [i for i in range(min(source), max(source) + 1)]
     poly = np.poly1d(z)
     interpolated = poly(source_)
     min_ = min(source)
@@ -107,3 +144,9 @@ def sci_interpolate(source, target, type_='b-spline'):
 if __name__ == '__main__':
     res = get_abs_path('F:/kaggle/pulmonary-fibrosis-progression/utils/dataloader.py', -2, 'data', 'train.csv')
     print(res)
+    x, y = [0, 1, 3, 5, 7, 13, 26, 37, 52], [0.859875904860393, 0.8839193381592549, 0.915460186142709, 0.905377456049638, 0.8815925542916241, 0.8989141675284391, 0.8451396070320579, 0.8650465356773529, 0.825491209927611]
+    xx, yy = linear_fill(x, y, 50)
+    print(xx)
+    print(yy)
+
+
