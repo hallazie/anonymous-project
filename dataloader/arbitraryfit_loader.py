@@ -8,9 +8,9 @@
 from config import RANDOM_STATE, TEST_UID, logger
 from ct.loader import loader
 from utils.common import get_abs_path, sample_array_to_bins, matrix_resize
-
-from collections import defaultdict
+from utils.arbitrary_curve_fit_builder import build_sigmoid
 from torch.utils.data import DataLoader, Dataset
+from collections import defaultdict
 
 import json
 import numpy as np
@@ -21,18 +21,18 @@ import pickle as pkl
 
 
 class ArbitraryFitRegressionDataset(Dataset):
-    def __init__(self, bins=16, train=True, meta_path='checkpoints/polynomial-pow3.json'):
+    def __init__(self, bins=16, train=True):
         super(ArbitraryFitRegressionDataset, self).__init__()
         self.test_uid = TEST_UID
-        self.bins = bins
+        self.bins = bins                # 对CT scan进行分桶
         self.train = train
-        self.meta_path = meta_path
         self.ct_size = (512, 512)
         self.data = defaultdict(list)
         self.label = {}
+        self.arbitrary_model_dict = {}
         self.train_path = get_abs_path(__file__, -2, 'data', 'train.csv')
         self.cache_path = get_abs_path(__file__, -2, 'data', 'ct-scan-cache.pkl')
-        self.power = 3
+        self.fitter_path = get_abs_path(__file__, 2, 'output', 'model', 'checkpoint', '0913')
         self._init_meta()
         self._init_label()
         self._init_ct()
@@ -82,38 +82,15 @@ class ArbitraryFitRegressionDataset(Dataset):
         for uid in self.data:
             if (uid in self.test_uid and self.train) or (uid not in self.test_uid and not self.train):
                 continue
-            x, y = [e[0] for e in self.data[uid]], [e[1] for e in self.data[uid]]
-            z = self._get_fvc_curve_polynomial_coefficient(x, y)
-            self.label[uid] = z
-        if not self.train:
-            return
-        c0 = np.array([x[0] for x in self.label.values()])
-        c1 = np.array([x[1] for x in self.label.values()])
-        c2 = np.array([x[2] for x in self.label.values()])
-        c3 = np.array([x[3] for x in self.label.values()])
-        self.avg = [np.mean(c0), np.mean(c1), np.mean(c2), np.mean(c3)]
-        self.std = [np.std(c0), np.std(c1), np.std(c2), np.std(c3)]
-        with open(self.meta_path, 'w', encoding='utf-8') as f:
-            json.dump({
-                'avg': self.avg,
-                'std': self.std,
-                'data-size': len(c0),
-            }, f, ensure_ascii=False, indent=4)
-        for uid, val in self.label.items():
-            self.label[uid] = np.array([
-                (val[0] - self.avg[0]) / self.std[0],
-                (val[1] - self.avg[1]) / self.std[1],
-                (val[2] - self.avg[2]) / self.std[2],
-                (val[3] - self.avg[3]) / self.std[3],
-            ])
+            sigmoid = build_sigmoid(32)
+            sigmoid.load(os.path.join(self.fitter_path, f'{uid}.pkl'))
+            coeff = sorted(sigmoid.coeff, key=lambda x: sum([y**2 for y in x]))
+            self.label[uid] = [y for x in coeff for y in x]
+            print(self.label[uid])
 
     def _init_dataset(self):
         self.uid = sorted(set(self.ct_feature.keys()) & set(self.label.keys()))
         logger.info('total data size: %s' % len(self.uid))
-
-    def _get_fvc_curve_polynomial_coefficient(self, week_list, fvc_list):
-        z = np.polyfit(week_list, fvc_list, self.power)
-        return z
 
     def __len__(self):
         return len(self.uid)
@@ -121,3 +98,9 @@ class ArbitraryFitRegressionDataset(Dataset):
     def __getitem__(self, index):
         uid = self.uid[index]
         return self.ct_feature[uid], self.label[uid], uid
+
+
+if __name__ == '__main__':
+    loader = ArbitraryFitRegressionDataset()
+
+
