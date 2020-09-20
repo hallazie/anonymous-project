@@ -62,6 +62,7 @@ class ArbitraryCurveFit:
         """
         use least square loss to optimize
         current only support online training, not batch training, or matrix calc
+        TODO support matrix calc
         """
         vis_step = iter_num // 10
         for it in range(iter_num):

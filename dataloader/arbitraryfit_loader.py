@@ -86,7 +86,7 @@ class ArbitraryFitRegressionDataset(Dataset):
             sigmoid = build_sigmoid(32)
             sigmoid.load(os.path.join(self.fitter_path, f'{uid}.pkl'))
             coeff = sorted(sigmoid.coeff, key=lambda x: sum([y**2 for y in x]))
-            self.label[uid] = [y for x in coeff for y in x]
+            self.label[uid] = np.array([y for x in coeff for y in x])
         logger.info(f'label init finished with size {len(self.label)}')
 
     def _init_dataset(self):

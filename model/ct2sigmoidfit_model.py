@@ -18,25 +18,25 @@ class CT2SigmoidModel(nn.Module):
             Conv2d(c_in, 16, 3, 1, act='leaky'),
             Pool('max'),            # 256
             Conv2d(16, 32, 3, 1, act='leaky'),
-            Conv2d(16, 32, 3, 1, act='leaky'),
+            Conv2d(32, 32, 3, 1, act='leaky'),
             Pool('max'),            # 128
             Conv2d(32, 64, 3, 1, act='leaky'),
-            Conv2d(32, 64, 3, 1, act='leaky'),
+            Conv2d(64, 64, 3, 1, act='leaky'),
             Pool('max'),            # 64
             Conv2d(64, 128, 3, 1, act='leaky'),
-            Conv2d(64, 128, 3, 1, act='leaky'),
+            Conv2d(128, 128, 3, 1, act='leaky'),
             Pool('max'),            # 32
             Conv2d(128, 256, 3, 1, act='leaky'),
-            Conv2d(128, 256, 3, 1, act='leaky'),
+            Conv2d(256, 256, 3, 1, act='leaky'),
             Pool('max'),            # 16
             Conv2d(256, 512, 3, 1, act='leaky'),
-            Conv2d(256, 512, 3, 1, act='leaky'),
+            Conv2d(512, 512, 3, 1, act='leaky'),
             Pool('max'),            # 8
             Conv2d(512, 512, 3, 1, act='leaky'),
             Conv2d(512, 512, 3, 1, act='leaky'),
             Pool('max'),            # 4
-            Conv2d(512, 4, 3, 1, act='leaky'),
-            Pool('max', kernel_size=32 * 3, stride=4),
+            Conv2d(512, 32 * 3, 3, 1, act='leaky'),
+            Pool('max', kernel_size=4, stride=4),
         )
 
     def forward(self, x):

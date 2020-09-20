@@ -8,6 +8,7 @@
 from model.ct2sigmoidfit_model import CT2SigmoidModel
 from dataloader.arbitraryfit_loader import ArbitraryFitRegressionDataset
 from utils.evaluate import evaluate_on_array
+from utils.arbitrary_curve_fit_builder import build_sigmoid
 from config import logger
 
 from torch import optim
@@ -64,10 +65,6 @@ class CT2PolynomialFit:
         self.model.train()
 
     def _load_model(self):
-        with open(self.meta_path, 'r', encoding='utf-8') as f:
-            meta = json.load(f)
-            self.avg = np.array(meta['avg'])
-            self.std = np.array(meta['std'])
         self.model = CT2SigmoidModel(self.bins)
         self.model.to(self.device)
         self.model.eval()
@@ -79,6 +76,7 @@ class CT2PolynomialFit:
         logger.info('checkpoint [%s] saved' % self.checkpoint_path)
 
     def train(self):
+        log = open('output/log', 'a', encoding='utf-8')
         self._init_data(True)
         self._init_model()
         for e in range(self.ep):
@@ -91,14 +89,23 @@ class CT2PolynomialFit:
                 loss.backward()
                 self.optimizer.step()
                 logger.info('epoch %s batch %s, with MSE loss: %s' % (e, i, loss.data.item()))
-                if i == 0:
+                log.write(f'epoch: {e}, batch: {i}, MSE loss:{loss.data.item()}\n')
+                if e % 100 == 0 and i == 0:
                     logger.info('epoch %s example label: %s, predict: %s' % (e, str(y[0].detach()), str(p[0].detach())))
+        log.close()
         self._save_checkpoint()
 
-    def _translate_polynomial(self, coefficient):
-        poly = np.poly1d(coefficient)
+    def _translate_coeff_to_seq(self, coefficient):
+        """
+        将coeff转换为x，y序列
+        :param coefficient:
+        :return:
+        """
+        coeff = [[coefficient[i*3], coefficient[i*3+1], coefficient[i*3+2]] for i in range(len(coefficient)//3)]
+        fitter = build_sigmoid(32)
+        fitter.coeff = coeff
         x = [i for i in range(self.min_, self.max_)]
-        y = poly(x)
+        y = fitter.fit(x)
         return x, y
 
     @staticmethod
@@ -108,7 +115,6 @@ class CT2PolynomialFit:
 
     def inference(self, x):
         p = self.model(x)[0, :, 0, 0].detach().cpu().detach().numpy()
-        p = (p * self.std) + self.avg
         return p
 
     def test(self):
@@ -122,8 +128,8 @@ class CT2PolynomialFit:
             y = y.cpu().numpy()[0]
             x = x.to(self.device)
             p = self.inference(x)
-            x0, y0 = self._translate_polynomial(y)
-            x1, y1 = self._translate_polynomial(p)
+            x0, y0 = self._translate_coeff_to_seq(y)
+            x1, y1 = self._translate_coeff_to_seq(p)
             ax = plt.subplot('22%s' % (i+1))
             ax.set_title(uid[0])
             print('y: %s, p: %s' % (str(y), str(p)))
@@ -140,7 +146,7 @@ class CT2PolynomialFit:
         for i, (x, y, uid) in enumerate(self.loader):
             x = x.to(self.device)
             p = self.inference(x)
-            _, y_fit = self._translate_polynomial(p)
+            _, y_fit = self._translate_coeff_to_seq(p)
             label_ = self.label[uid[0]]
             predict = [y_fit[e[0]-self.min_] for e in label_]
             label = [e[1] for e in label_]
