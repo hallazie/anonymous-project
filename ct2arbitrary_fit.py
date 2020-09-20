@@ -5,7 +5,7 @@
 # @time: 2020/8/1 17:19
 # @desc:
 
-from model.ct2polyfit_model import CT2PolyModel
+from model.ct2sigmoidfit_model import CT2SigmoidModel
 from dataloader.arbitraryfit_loader import ArbitraryFitRegressionDataset
 from utils.evaluate import evaluate_on_array
 from config import logger
@@ -35,7 +35,6 @@ class CT2PolynomialFit:
         self.bs = 8
         self.ep = 10000
         self.checkpoint_path = 'checkpoints/ct2arbi-%s.pkl' % datetime.date.today()
-        self.meta_path = 'checkpoints/polynomial-pow3.json'
         self.label_path = 'data/train.csv'
 
     def _init_data(self, train=True):
@@ -57,7 +56,7 @@ class CT2PolynomialFit:
             self.label[uid].append((week, fvc, percent, age, gender_))
 
     def _init_model(self):
-        self.model = CT2PolyModel(self.bins)
+        self.model = CT2SigmoidModel(self.bins)
         self.model.to(self.device)
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr, weight_decay=self.wd)
         self.criterion = nn.MSELoss()
@@ -69,7 +68,7 @@ class CT2PolynomialFit:
             meta = json.load(f)
             self.avg = np.array(meta['avg'])
             self.std = np.array(meta['std'])
-        self.model = CT2PolyModel(self.bins)
+        self.model = CT2SigmoidModel(self.bins)
         self.model.to(self.device)
         self.model.eval()
         checkpoint = torch.load(self.checkpoint_path)

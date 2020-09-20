@@ -59,6 +59,7 @@ class ArbitraryFitRegressionDataset(Dataset):
             with open(self.cache_path, 'rb') as f:
                 logger.info('using cached ct-feature pickle')
                 self.ct_feature = pkl.load(f)
+            return
         for i, uid in enumerate(self.data):
             if (uid in self.test_uid and self.train) or (uid not in self.test_uid and not self.train):
                 continue
@@ -86,7 +87,7 @@ class ArbitraryFitRegressionDataset(Dataset):
             sigmoid.load(os.path.join(self.fitter_path, f'{uid}.pkl'))
             coeff = sorted(sigmoid.coeff, key=lambda x: sum([y**2 for y in x]))
             self.label[uid] = [y for x in coeff for y in x]
-            print(self.label[uid])
+        logger.info(f'label init finished with size {len(self.label)}')
 
     def _init_dataset(self):
         self.uid = sorted(set(self.ct_feature.keys()) & set(self.label.keys()))

@@ -18,6 +18,8 @@ def Conv2d(c_in, c_out, kernel_size, pad, act='relu'):
         seq.append(nn.ReLU6(inplace=True))
     elif act == 'tanh':
         seq.append(nn.Tanh())
+    elif act == 'leaky':
+        seq.append(nn.LeakyReLU())
     return nn.Sequential(*seq)
 
 
