@@ -26,6 +26,23 @@ def batch_histogram():
         print(f'{i}th {name} save finished...')
 
 
+def resp_histogram():
+    df = dt.fread(TRAIN_PATH)
+    df = df.to_pandas()
+    name = 'resp'
+    col = df[name]
+    sor = sorted(list(col))
+    siz = len(col)
+    part1 = len([x for x in sor if x > 0.001])
+    print(f'for 0.001: {part1}/{siz} = {float(part1)/siz}')
+    print(f'1/3={sor[int(len(sor)*0.333333)]}, 2/3={sor[int(len(sor)*0.666666)]}')
+    plt.hist(col, bins=1024)
+    # plt.savefig(f'output/figs/basic-eda/resp-hist.png')
+    # plt.clf()
+    # print(f'{name} save finished...')
+    plt.show()
+
+
 def accum_plot():
     df = dt.fread(TRAIN_PATH)
     df = df.to_pandas()
@@ -70,4 +87,4 @@ def plot_weight():
 
 
 if __name__ == '__main__':
-    plot_weight()
+    resp_histogram()

@@ -27,6 +27,7 @@ class DataLoader:
         df = dt.fread(TRAIN_PATH)
         df = df.to_pandas().fillna(0)
         self.data = df
+        self.data = self.data[self.data.weight != 0]
 
     @staticmethod
     def _normalize_x(df):
@@ -46,7 +47,8 @@ class DataLoader:
         total_x = self.data[[col for col in col_names if col.startswith('feature')]]
         # total_x = np.array(self._normalize_x(total_x))
         total_x = np.array(total_x)
-        total_y = np.expand_dims(np.array((self.data.resp > 0).astype('int')), 1)
+        total_y = np.expand_dims(np.array(((self.data.resp * self.data.weight) > 0.0).astype('int')), 1)
+        print(f'positive rate for training: {int(sum(total_y))}/{len(total_y)}')
         total_r = np.array(self.data.resp)
         total_d = np.array(self.data.date)
         total_w = np.array(self.data.weight)

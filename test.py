@@ -45,7 +45,7 @@ class Tester:
             x = torch.from_numpy(x).to(self.device).float()
             y = torch.from_numpy(y).to(self.device).float()
             p = self.model(x).float()[:, 0].cpu().detach().numpy()
-            a = y[:, 0].cpu().detach().numpy()
+            a = y.cpu().detach().numpy()
             w_list.extend(list(w))
             r_list.extend(list(r))
             a_list.extend(list(a))
@@ -53,7 +53,8 @@ class Tester:
             d_list.extend(list(d))
         score_pred = scoring(date_list=d_list, weight_list=w_list, resp_list=r_list, action_list=p_list)
         score_perf = scoring(date_list=d_list, weight_list=w_list, resp_list=r_list, action_list=a_list)
-        p_list = [1 if p_ >= 0.5 else 0 for p_ in p_list]
+        p_list = [1 if p_ >= 0 else 0 for p_ in p_list]
+        a_list = [1 if a_ >= 0 else 0 for a_ in a_list]
         acc = sum([1 if p_ == y_ else 0 for p_, y_ in zip(p_list, a_list)]) / float(len(p_list))
         if print_info:
             print(f'predict: {p_list[:1024]}')

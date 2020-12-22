@@ -14,14 +14,15 @@ class MLPModel(nn.Module):
         super(MLPModel, self).__init__()
         neural_size_fill = [input_size] + neural_size
         neural_list = [
-            (nn.Linear(in_features=neural_size_fill[i], out_features=neural_size_fill[i + 1]),
-             # nn.BatchNorm1d(num_features=neural_size_fill[i + 1]),
+            (nn.Linear(in_features=neural_size_fill[i], out_features=neural_size_fill[i + 1], bias=True),
+             nn.BatchNorm1d(num_features=neural_size_fill[i + 1]),
              nn.Dropout(0.125),
              nn.Tanh())
             for i in range(len(neural_size_fill) - 1)]
         neural_list = [x for y in neural_list for x in y]
-        self.out = nn.Sequential(nn.Linear(in_features=neural_size[-1], out_features=1), nn.Sigmoid())
         self.bone = nn.Sequential(*neural_list)
+        self.out = nn.Sequential(nn.Linear(in_features=neural_size[-1], out_features=1), nn.Sigmoid())
+        # self.out = nn.Sequential(nn.Linear(in_features=neural_size[-1], out_features=1))
 
     def forward(self, x):
         y = self.bone(x)
