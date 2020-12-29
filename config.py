@@ -16,7 +16,7 @@ LOGGER = logging.getLogger()
 
 RANDOM_SEED = 30
 
-LAYERS = [256, 384, 512, 512, 512, 768, 768]
+LAYERS = [256, 256, 512, 512, 128]
 
 
 

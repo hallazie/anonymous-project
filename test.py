@@ -1,74 +1,59 @@
 # --*-- coding:utf-8 --*--
 # @author: Xiao Shanghua
 # @contact: hallazie@outlook.com
-# @file: test.py
-# @time: 2020/12/20 17:18
+# @file: train.py
+# @time: 2020/12/20 14:05
 # @desc:
 
-from dataloader import DataLoader
+from sklearn.model_selection import train_test_split
 from mlp_model import MLPModel
-from config import LOGGER, LAYERS
+from config import *
 from score import scoring
 
+import datatable as dt
 import torch
-import torch.nn as nn
-import torch.optim as optim
 import numpy as np
 
 
 class Tester:
     def __init__(self):
         self.device = torch.device(torch.cuda.current_device() if torch.cuda.is_available() else 'cpu')
-        self.batch_size = 2048
-        self.loader = DataLoader()
-        self._init_data()
+        self.epoch = 4096
+        self.batch_size = 4096
+        self.lr = 1e-3
 
-    def _load_model(self):
-        self.model = MLPModel(130, LAYERS, 1).to(self.device)
-        self.model.eval()
+    def test(self):
+        model = MLPModel(130, LAYERS).to(self.device)
+        model.eval()
         checkpoint = torch.load('checkpoints/baseline.pkl')
-        self.model.load_state_dict(state_dict=checkpoint, strict=True)
+        model.load_state_dict(state_dict=checkpoint, strict=True)
 
-    def _init_data(self):
-        self._load_model()
-        self.test_x, self.test_y, self.test_d, self.test_r, self.test_w = self.loader.get_train_and_test(10, shuffle=False, train=False)
+        train = dt.fread(TRAIN_PATH)
+        train = train.to_pandas()
+        train = train[train['weight'] != 0]
+        train['action'] = ((train['weight'].values * train['resp'].values) > 0).astype('int')
 
-    def test(self, print_info=False):
-        w_list, r_list, a_list, d_list, p_list = [], [], [], [], []
-        for b in range(len(self.test_x) // self.batch_size):
-            x = self.test_x[b * self.batch_size:(b + 1) * self.batch_size]
-            y = self.test_y[b * self.batch_size:(b + 1) * self.batch_size]
-            d = self.test_d[b * self.batch_size:(b + 1) * self.batch_size]
-            r = self.test_r[b * self.batch_size:(b + 1) * self.batch_size]
-            w = self.test_w[b * self.batch_size:(b + 1) * self.batch_size]
+        feature = [False] * 7 + [True] * 130 + [False] * 2
+        # x_train = train.loc[:, train.columns.str.contains('feature')]
+        x_train = train.loc[:, feature]
+        y_train = train.loc[:, 'action']
+        w_train = train.loc[:, 'weight']
+        r_train = train.loc[:, 'resp']
+        d_train = train.loc[:, 'date']
 
-            x = torch.from_numpy(x).to(self.device).float()
-            y = torch.from_numpy(y).to(self.device).float()
-            p = self.model(x).float()[:, 0].cpu().detach().numpy()
-            a = y.cpu().detach().numpy()
-            w_list.extend(list(w))
-            r_list.extend(list(r))
-            a_list.extend(list(a))
-            p_list.extend(list(p))
-            d_list.extend(list(d))
-        score_pred = scoring(date_list=d_list, weight_list=w_list, resp_list=r_list, action_list=p_list)
-        score_perf = scoring(date_list=d_list, weight_list=w_list, resp_list=r_list, action_list=a_list)
-        p_list = [1 if p_ >= 0 else 0 for p_ in p_list]
-        a_list = [1 if a_ >= 0 else 0 for a_ in a_list]
-        acc = sum([1 if p_ == y_ else 0 for p_, y_ in zip(p_list, a_list)]) / float(len(p_list))
-        if print_info:
-            print(f'predict: {p_list[:1024]}')
-            print(f'labels:  {[int(a_) for a_ in a_list[:1024]]}')
-            print(f'final score for test set is: {score_pred}, with accuracy: {acc}, while perfect score={score_perf}')
-            conf_pred = sum(p_list) / float(len(p_list))
-            conf_perf = sum(a_list) / float(len(a_list))
-            print(f'precit conficence={conf_pred}, while perfect confidence={conf_perf}')
-        return score_pred
+        train_x, test_x, train_y, test_y, train_w, test_w, train_r, test_r, train_d, test_d = train_test_split(x_train, y_train, w_train, r_train, d_train, random_state=666, test_size=0.1)
+        train_x = train_x.fillna(0)
+        test_x = test_x.fillna(0)
+        print(test_x.shape)
+        pred = model(torch.from_numpy(np.array(test_x)).to(self.device).float())[:, 0].cpu().detach().numpy()
+        print(pred.shape)
+        score = scoring(date_list=list(test_d), weight_list=list(test_w), resp_list=list(test_r), action_list=list(pred))
+        print(score)
 
 
 if __name__ == '__main__':
     tester = Tester()
-    tester.test(print_info=True)
+    tester.test()
 
 
 

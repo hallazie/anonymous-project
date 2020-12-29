@@ -10,11 +10,15 @@ import matplotlib.pyplot as plt
 
 with open('log', 'r', encoding='utf-8') as f:
     lines = f.readlines()
-    loss = []
+    loss, acc = [], []
     for x in lines:
         try:
-            loss.append(float(x.split('loss=')[-1].strip()))
+            loss.append(float(x.split('loss=')[-1].split(',')[0].strip()))
+            acc.append(float(x.split(', acc=')[-1].strip()))
         except Exception as e:
             print(f'line: {x} failed with error: {e}')
-    plt.plot(loss)
+    plt.subplot(121)
+    plt.plot(loss, label='loss')
+    plt.subplot(122)
+    plt.plot(acc, label='acc')
     plt.show()

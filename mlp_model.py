@@ -10,7 +10,7 @@ import torch.nn as nn
 
 
 class MLPModel(nn.Module):
-    def __init__(self, input_size, neural_size, label_size):
+    def __init__(self, input_size, neural_size):
         super(MLPModel, self).__init__()
         neural_size_fill = [input_size] + neural_size
         neural_list = [
@@ -22,7 +22,6 @@ class MLPModel(nn.Module):
         neural_list = [x for y in neural_list for x in y]
         self.bone = nn.Sequential(*neural_list)
         self.out = nn.Sequential(nn.Linear(in_features=neural_size[-1], out_features=1), nn.Sigmoid())
-        # self.out = nn.Sequential(nn.Linear(in_features=neural_size[-1], out_features=1))
 
     def forward(self, x):
         y = self.bone(x)
