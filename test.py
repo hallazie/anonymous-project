@@ -5,12 +5,13 @@
 # @time: 2020/12/20 14:05
 # @desc:
 
-from sklearn.model_selection import train_test_split
-from mlp_model import MLPModel
-from config import *
+from dataloader import DataLoader
 from score import scoring
+from mlp_approach import MLP
+from regression_approach import REG
 
 import datatable as dt
+import json
 import torch
 import numpy as np
 
@@ -18,37 +19,50 @@ import numpy as np
 class Tester:
     def __init__(self):
         self.device = torch.device(torch.cuda.current_device() if torch.cuda.is_available() else 'cpu')
-        self.epoch = 4096
-        self.batch_size = 4096
-        self.lr = 1e-3
+        self.loader = DataLoader()
 
     def test(self):
-        model = MLPModel(130, LAYERS).to(self.device)
-        model.eval()
-        checkpoint = torch.load('checkpoints/baseline.pkl')
-        model.load_state_dict(state_dict=checkpoint, strict=True)
+        clf = torch.load('checkpoints/mlp-200.pkl')
+        pred = clf(torch.from_numpy(self.loader.X_test).float().cuda()).cpu().detach().numpy()
 
-        train = dt.fread(TRAIN_PATH)
-        train = train.to_pandas()
-        train = train[train['weight'] != 0]
-        train['action'] = ((train['weight'].values * train['resp'].values) > 0).astype('int')
+        # pred = np.where(pred[:, 3] > 0.5, 1, 0).astype('int')
+        # labl = self.loader.y_test[:, 3]
 
-        feature = [False] * 7 + [True] * 130 + [False] * 2
-        # x_train = train.loc[:, train.columns.str.contains('feature')]
-        x_train = train.loc[:, feature]
-        y_train = train.loc[:, 'action']
-        w_train = train.loc[:, 'weight']
-        r_train = train.loc[:, 'resp']
-        d_train = train.loc[:, 'date']
+        # pred = np.where(np.mean(pred, axis=1) > 0, 1, 0).astype('int')
+        pred = np.where(pred[:, 0] > 0.5, 1, 0).astype('int')
+        labl = self.loader.y_test[:, 0]
 
-        train_x, test_x, train_y, test_y, train_w, test_w, train_r, test_r, train_d, test_d = train_test_split(x_train, y_train, w_train, r_train, d_train, random_state=666, test_size=0.1)
-        train_x = train_x.fillna(0)
-        test_x = test_x.fillna(0)
-        print(test_x.shape)
-        pred = model(torch.from_numpy(np.array(test_x)).to(self.device).float())[:, 0].cpu().detach().numpy()
-        print(pred.shape)
-        score = scoring(date_list=list(test_d), weight_list=list(test_w), resp_list=list(test_r), action_list=list(pred))
+        score = scoring(date_list=list(self.loader.d_test), weight_list=list(self.loader.w_test), resp_list=list(self.loader.r_test), action_list=list(pred))
         print(score)
+
+        # labl = np.where(np.mean(self.loader.y_test, axis=1) > 0, 1, 0).astype('int')
+        # labl = np.where(np.mean(np.where(self.loader.y_test[0] > 0, 1, 0), axis=1)).astype('int')
+        print(self.loader.y_test.shape, pred.shape)
+
+        acc = sum([1 if p == l else 0 for p, l in zip(pred, labl)]) / float(len(pred))
+        print(f'pred={pred.shape}, {pred[:3]}..., label={labl.shape}, {labl[:3]}...  -->  score={score}, resp-acc={acc}')
+
+    def run_single(self, ck):
+        clf = torch.load(f'checkpoints/mlp-{ck}.pkl')
+        pred = clf(torch.from_numpy(self.loader.X_test).float().cuda()).cpu().detach().numpy()
+        pred = np.where(pred[:, 0] > 0.5, 1, 0).astype('int')
+        labl = self.loader.y_test[:, 0]
+        score = scoring(date_list=list(self.loader.d_test), weight_list=list(self.loader.w_test),
+                        resp_list=list(self.loader.r_test), action_list=list(pred))
+        acc = sum([1 if p == l else 0 for p, l in zip(pred, labl)]) / float(len(pred))
+        return score, acc
+
+    def run(self):
+        res = {}
+        for i in range(1, 25):
+            ck = i * 200
+            s, a = self.run_single(ck)
+            res[ck] = {
+                'score': s,
+                'acc': a
+            }
+        with open('output/mlp-5000-result.json', 'w', encoding='utf-8') as f:
+            json.dump(res, f, ensure_ascii=False, indent=4)
 
 
 if __name__ == '__main__':
