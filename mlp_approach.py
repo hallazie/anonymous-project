@@ -5,7 +5,7 @@
 # @time: 2021/1/24 14:39
 # @desc:
 
-from dataloader import DataLoader
+from dataloader_fix import DataLoader
 from torch.optim import Adam
 
 import torch.nn as nn
@@ -34,32 +34,12 @@ class MLP(nn.Module):
         return self.bone(x)
 
 
-class MLPModel(nn.Module):
-    def __init__(self, input_size, neural_size):
-        super(MLPModel, self).__init__()
-        neural_size_fill = [input_size] + neural_size
-        neural_list = [
-            (nn.Linear(in_features=neural_size_fill[i], out_features=neural_size_fill[i + 1], bias=True),
-             nn.BatchNorm1d(num_features=neural_size_fill[i + 1]),
-             nn.Dropout(0.125),
-             nn.Tanh())
-            for i in range(len(neural_size_fill) - 1)]
-        neural_list = [x for y in neural_list for x in y]
-        self.bone = nn.Sequential(*neural_list)
-        self.out = nn.Sequential(nn.Linear(in_features=neural_size[-1], out_features=1), nn.Sigmoid())
-
-    def forward(self, x):
-        y = self.bone(x)
-        y = self.out(y)
-        return y
-
-
 def run():
     loader = DataLoader()
-    epoch = 5000
+    epoch = 1000
     batch_size = 4096
-    hidden_units = [164, 164, 256, 256, 256, 128, 32]
-    drop_rates = [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.1]
+    hidden_units = [164, 164, 256, 128]
+    drop_rates = [0.2, 0.2, 0.2, 0.2]
     lr = 1e-3
     datasize = loader.X_train.shape[0]
 
