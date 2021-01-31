@@ -24,42 +24,33 @@ class DataLoader:
         self._init_data()
 
     def _init_data(self):
-        train = dt.fread(TRAIN_PATH)
+        train = dt.fread(TOTAL_PATH)
         train = train.to_pandas()
-        # train = pd.read_csv(TRAIN_PATH)
         train = train.query('date > 85').reset_index(drop=True)
-        train.fillna(train.mean(), inplace=True)
-        # train = train[train['weight'] != 0]
         train = train.query('weight != 0').reset_index(drop=True)
+        train.fillna(train.mean(), inplace=True)
 
-        # train['action'] = ((train['weight'].values * train['resp'].values) > 0).astype('int')
         train['action'] = (train['resp'].values > 0).astype('int')
-        # f_mean = np.mean(train[[c for c in train.columns if 'feature' in c][1:]].values, axis=0)
-
         resp_cols = ['resp', 'resp_1', 'resp_2', 'resp_3', 'resp_4']
         X_train = train.loc[:, train.columns.str.contains('feature')].values
+        # X_train = train.loc[:, features].values
+        # y_train = train.loc[:, resp_cols].values
         y_train = np.stack([(train[c] > 0).astype('int') for c in resp_cols]).T
-        # y_train = train.loc[:, train.columns.str.contains('resp')]
-        # y_train = train.loc[:, 'resp'] * train.loc[:, 'weight']
         w_train = train.loc[:, 'weight']
         r_train = train.loc[:, 'resp']
         d_train = train.loc[:, 'date']
 
-        self.X_train, self.X_test, self.y_train, self.y_test, self.w_train, self.w_test, self.r_train, self.r_test, self.d_train, self.d_test = train_test_split(
-            X_train, y_train, w_train, r_train, d_train, random_state=RANDOM_SEED, test_size=0.08)
+        y_train = y_train * np.tile(np.clip(w_train, a_min=0.25, a_max=8), (5, 1)).T
 
-        # self.X_train, self.X_test = X_train, X_train
-        # self.y_train, self.y_test = y_train, y_train
-        # self.w_train, self.w_test = w_train, w_train
-        # self.r_train, self.r_test = r_train, r_train
-        # self.d_train, self.d_test = d_train, d_train
+        self.X_train, self.X_test, self.y_train, self.y_test, self.w_train, self.w_test, self.r_train, self.r_test, self.d_train, self.d_test = train_test_split(X_train, y_train, w_train, r_train, d_train, random_state=RANDOM_SEED, test_size=0.05)
 
-        print(train.shape, self.X_train.shape, self.X_test.shape)
-        print(train.mean().shape, self.X_train.mean().shape, self.X_test.mean().shape)
-
+        print(f'train: {[e[:20] for e in self.X_train[:2]]}')
+        print(f'test:  {[e[:20] for e in self.X_test[:2]]}')
         print(f'train and test set init finished with size: {self.X_train.shape} {self.y_train.shape}, {self.X_test.shape} {self.y_test.shape}')
         print(f'train date: {len(set(self.d_train))}, test date: {len(set(self.d_test))}, datatype={type(self.X_train)}')
 
 
 if __name__ == '__main__':
     loader = DataLoader()
+
+
