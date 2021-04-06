@@ -1,22 +1,35 @@
-# --*-- coding:utf-8 --*--
-# @author: Xiao Shanghua
-# @contact: hallazie@outlook.com
-# @file: config.py
-# @time: 2020/12/19 15:37
-# @desc:
+# coding: utf-8
 
-import logging
+from pylab import mpl
+mpl.rcParams['font.sans-serif'] = ['Microsoft YaHei']
+mpl.rcParams['axes.unicode_minus'] = False
 
-TRAIN_PATH = 'G:/datasets/kaggle/jane-street/train.csv'
 
-logging.basicConfig(level=logging.DEBUG)
-mpl_logger = logging.getLogger('matplotlib')
-mpl_logger.setLevel(logging.WARNING)
-LOGGER = logging.getLogger()
+DATA_PATH = 'I:\\datasets\\kaggle\\human-protein-atlas'
 
-RANDOM_SEED = 30
+LABEL_DICT = {x.split('.')[0].strip(): x.split('.')[1].strip() for x in """
+0.核质
+1.核膜
+2.核仁
+3.核仁纤维中心
+4.核斑
+5.核机构
+6.内质网
+7.高尔基体
+8.中间丝
+9.肌动蛋白丝
+10.微管
+11.有丝分裂纺锤体
+12.中心体
+13.质膜
+14.线粒体
+15.令人讨厌
+16.胞质溶胶
+17.囊泡和点状胞浆模式
+18.负面的
+""".split('\n') if x}
 
-LAYERS = [256, 256, 512, 512, 128]
+
 
 
 
