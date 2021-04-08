@@ -68,7 +68,7 @@ for i in range(len(seg_nuc)):
     crop0 = single_masks[0][index]
     plt.imshow(crop0)
     plt.subplot(224)
-    x, y = np.where(single_masks[0])
+    x, y = np.where(single_masks[1])
     index = np.meshgrid(np.arange(min(x), max(x)+1), np.arange(min(y), max(y)+1), indexing='xy')
     crop1 = single_masks[1][index]
     plt.imshow(crop1)
