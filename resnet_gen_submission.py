@@ -25,7 +25,6 @@ clf = torch.load(f'checkpoints/model.resnet50.singlecell.25.pkl').cuda()
 clf.eval()
 
 
-
 def binary_mask_to_ascii(mask, mask_val=1):
     """Converts a binary mask into OID challenge encoding ascii text."""
     mask = np.where(mask == mask_val, 1, 0).astype(np.bool)
@@ -118,6 +117,6 @@ for ep in range(step):
         print(f'id={prefix}, pred={sorted(pred_curr)}, label={sorted(label_idx)}, save size={len(save)}')
 
     savedf = pd.DataFrame(save)
-    savedf.to_csv('output/submission-0.csv', index=False, header=['ImageID', 'ImageWidth', 'ImageHeight', 'PredictionString'])
+    savedf.to_csv('output/submission-0.csv', index=False, header=['ID', 'ImageWidth', 'ImageHeight', 'PredictionString'])
 
 

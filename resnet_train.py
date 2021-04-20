@@ -2,6 +2,7 @@
 
 from torch.utils.data.dataset import Dataset
 from torch.utils.data.dataloader import DataLoader
+from torch.optim.lr_scheduler import StepLR
 from PIL import Image
 from criterion import f1_score
 
@@ -14,6 +15,8 @@ import numpy as np
 import pandas as pd
 import os
 import sys
+import random
+
 
 console = sys.stdout
 
@@ -82,7 +85,8 @@ with open('log-with-eval2.txt', 'a', encoding='utf-8') as logfile:
 
     # criterion = nn.BCEWithLogitsLoss()
     criterion = nn.BCELoss()
-    optimizer = optim.Adam(net.parameters(), lr=1e-5)
+    optimizer = optim.Adam(net.parameters(), lr=1e-4)
+    scheduler = StepLR(optimizer, step_size=5, gamma=0.2, last_epoch=-1)
 
     dataset_train = DSet(train_path)
     dataloader_train = DataLoader(dataset=dataset_train, batch_size=batch_size, shuffle=True)
@@ -103,10 +107,12 @@ with open('log-with-eval2.txt', 'a', encoding='utf-8') as logfile:
             loss.backward()
             optimizer.step()
             sys.stdout = console
-            print(f'epoch={e}, batch={idx}/{batch_num}, loss={loss.data.item()}')
+            print(f'epoch={e}, lr={optimizer.param_groups[0].get("lr")}, batch={idx}/{batch_num}, loss={loss.data.item()}')
             sys.stdout = logfile
-            print(f'epoch={e}, batch={idx}/{batch_num}, loss={loss.data.item()}')
+            print(f'epoch={e}, lr={optimizer.param_groups[0].get("lr")}, batch={idx}/{batch_num}, loss={loss.data.item()}')
         torch.save(net, f'checkpoints/model.resnet50.singlecell.{e}.pkl')
+
+        scheduler.step()
 
         ll, pp = [], []
         for idx, (l, b) in enumerate(dataloader_test):
@@ -122,6 +128,7 @@ with open('log-with-eval2.txt', 'a', encoding='utf-8') as logfile:
             print(f'epoch={e} inference {idx}/{batch_num_test} finished with f1-score: {f1_score(l_, p_)}, p={p_}, l={l_}')
             sys.stdout = logfile
             print(f'epoch={e} inference {idx}/{batch_num_test} finished with f1-score: {f1_score(l_, p_)}, p={p_}, l={l_}')
+
         sys.stdout = console
         print(f'epoch={e} finial f1 score on test set ({dataloader_test.__len__()}): {f1_score(ll, pp)}')
         sys.stdout = logfile

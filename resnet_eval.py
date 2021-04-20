@@ -16,15 +16,16 @@ console = sys.stdout
 
 with open('log.txt', 'a', encoding='utf-8') as logfile:
 
-    dpath = 'I:/datasets/kaggle/human-protein-atlas/train-single-cell/cells'
+    dpath = 'I:/datasets/kaggle/human-protein-atlas/train-single-cell/cells-test'
     cpath = 'data/cell_df.csv'
     batch_size = 24
 
 
     class DSet(Dataset):
         def __init__(self):
+            ix = [x.split('.')[0] for x in os.listdir(dpath) if x.endswith('jpg')]
             dd = pd.read_csv(cpath).fillna('').values
-            df = [x for x in dd if self.valid_size(x)]
+            df = [x for x in dd if self.valid_size(x) if f'{x[0]}_{x[4]}' in ix]
             print(f'valid training sample: {len(dd)} --> {len(df)}')
             self.pic_ids = [x[0] for x in df]
             self.cel_ids = [x[4] for x in df]
@@ -53,7 +54,7 @@ with open('log.txt', 'a', encoding='utf-8') as logfile:
             return len(self.labels)
 
 
-    net = torch.load('checkpoints/model.resnet50.singlecell.29.pkl')
+    net = torch.load('checkpoints/model.resnet50.singlecell.25.pkl')
     # net.requires_grad = False
     net.eval()
 
@@ -66,14 +67,14 @@ with open('log.txt', 'a', encoding='utf-8') as logfile:
 
     for idx, (l, b) in enumerate(dataloader):
         l, b = l.float().cuda(), b.cuda()
-        p = net(b.cuda())
+        p = net(b)
         l_idx = l.cpu().detach().numpy()
         p_idx = p.cpu().detach().numpy()
         l_ = [[i for i, v in enumerate(t) if v > 0.5] for t in l_idx]
         p_ = [[i for i, v in enumerate(t) if v > 0.5] for t in p_idx]
         ll.extend(l_)
         pp.extend(p_)
-        print(f'inference {idx}/{batch_num} finished with f1-score: {f1_score(l_, p_)}')
+        print(f'inference {idx}/{batch_num} finished with f1-score: {f1_score(l_, p_)}, p={p_}, l={l_}')
 
     print(f'finial f1 score on train set: {f1_score(ll, pp)}')
 
