@@ -1,27 +1,13 @@
 # --*-- coding:utf-8 --*--
-# @author: Xiao Shanghua
-# @contact: hallazie@outlook.com
-# @file: utils.py
-# @time: 2020/12/19 15:45
-# @desc:
+# @author: xiao shanghua
 
-from config import LOGGER
-
-import time
+import re
 
 
-def monitor_run_time(func):
-    def wrap(**kwargs):
-        start = time.time()
-        ret = func(**kwargs)
-        end = time.time()
-        LOGGER.info(f'{str(func)} cost {end - start} seconds')
-        return ret
-    return wrap
+def segment(text):
+    text = re.sub(r'[,.!?;"\'\-_+\[\]()]', '', text.lower())
+    segs = re.split(r'\s', text)
+    return segs
 
 
-if __name__ == '__main__':
-    @monitor_run_time
-    def foo():
-        time.sleep(1)
-    foo()
+
