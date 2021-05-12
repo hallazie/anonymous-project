@@ -20,7 +20,7 @@ import random
 
 console = sys.stdout
 
-with open('log-with-eval2.txt', 'a', encoding='utf-8') as logfile:
+with open('log-with-eval3.txt', 'a', encoding='utf-8') as logfile:
 
     train_path = 'I:/datasets/kaggle/human-protein-atlas/train-single-cell/cells'
     test_path = 'I:/datasets/kaggle/human-protein-atlas/train-single-cell/cells-test'
@@ -62,9 +62,10 @@ with open('log-with-eval2.txt', 'a', encoding='utf-8') as logfile:
             return len(self.labels)
 
 
-    tinp = torch.zeros((1, 3, 256, 256))
+    tinp = torch.zeros((1, 1, 256, 256))
 
     resnet18 = models.resnet50(pretrained=True)
+    resnet18.conv1 = nn.Conv1d(1, 64, (7, 7), (2, 2), (3, 3), bias=False)   # change input channel to 1
     # resnet18 = models.resnet18(pretrained=True)
 
     backbone = nn.Sequential(*list(resnet18.children())[:-2])
@@ -110,7 +111,7 @@ with open('log-with-eval2.txt', 'a', encoding='utf-8') as logfile:
             print(f'epoch={e}, lr={optimizer.param_groups[0].get("lr")}, batch={idx}/{batch_num}, loss={loss.data.item()}')
             sys.stdout = logfile
             print(f'epoch={e}, lr={optimizer.param_groups[0].get("lr")}, batch={idx}/{batch_num}, loss={loss.data.item()}')
-        torch.save(net, f'checkpoints/model.resnet50.singlecell.{e}.pkl')
+        torch.save(net, f'ckpt/checkpoints/model.resnet50.singlecell.{e}.pkl')
 
         scheduler.step()
 

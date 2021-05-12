@@ -7,9 +7,9 @@ def f1_score(label, pred):
         tp += len(l & p)
         fp += len(p - l)
         fn += len(l - p)
-    prec = float(tp) / (tp + fp)
-    reca = float(tp) / (tp + fn)
-    f1sc = (2 * prec * reca) / (prec + reca)
+    prec = float(tp) / (tp + fp) if (tp + fp) > 0 else 0.
+    reca = float(tp) / (tp + fn) if (tp + fp) > 0 else 0.
+    f1sc = (2 * prec * reca) / (prec + reca) if (prec + reca) > 0 else 0.
     return f1sc
 
 

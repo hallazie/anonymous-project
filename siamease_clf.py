@@ -6,9 +6,9 @@ from torch.optim.lr_scheduler import StepLR
 from PIL import Image
 from criterion import f1_score
 from blocks import *
+from copy import deepcopy
 from focal_loss.focal_loss import FocalLoss
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import auc
 from efficientnet_pytorch import EfficientNet
 
 import torchvision.transforms as transforms
@@ -24,7 +24,51 @@ import random
 
 
 console = sys.stdout
-log_path = 'log-with-eval-efficientnet-b5.txt'
+log_path = 'log-with-eval-siamease-two.txt'
+
+
+class Model(nn.Module):
+    def __init__(self):
+        super(Model, self).__init__()
+
+        pretrained = self._get_pretrained()
+        layer_list = []
+        for layer in pretrained.children():
+            if type(layer) is not nn.ModuleList:
+                layer_list.append(layer)
+            else:
+                for sub_layer in layer:
+                    layer_list.append(sub_layer)
+        layer_list = layer_list[:-3]
+        self.backbone_coarse = nn.Sequential(*layer_list)
+        self.backbone_fine = deepcopy(self.backbone_coarse)
+
+        tinp = torch.zeros((1, 3, img_size, img_size))
+        tout = self.backbone_coarse(tinp)
+        hidden_size = tout.shape[1]
+
+        self.clf = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(1),
+            nn.Linear(hidden_size * 2, 19),
+            nn.Sigmoid(),
+        )
+
+    def forward(self, coarse, fine):
+        x_c = self.backbone_coarse(coarse)
+        x_f = self.backbone_fine(fine)
+        x = torch.cat((x_c, x_f), dim=1)
+        y = self.clf(x)
+        return y
+
+    @staticmethod
+    def _get_pretrained():
+        # pretrained = models.resnet50(pretrained=True)
+        # pretrained.conv1 = nn.Conv2d(1, 64, (7, 7), (2, 2), (3, 3), bias=False)   # change input channel to 1
+        # pretrained = models.densenet121(pretrained=True)
+        # pretrained.features[0] = nn.Conv2d(1, 64, (7, 7), (2, 2), (3, 3), bias=False)   # change input channel to 1
+        pretrained = EfficientNet.from_pretrained('efficientnet-b0')
+        return pretrained
 
 
 class DSet(Dataset):
@@ -35,21 +79,21 @@ class DSet(Dataset):
         print(f'valid {task} sample: {len(dd)} --> {len(df)}')
         self.pic_ids = [x[0] for x in df]
         self.labels = [[int(y.strip()) for y in x[1].split('|')] for x in df]
-        if task == 'train':
-            self.trans = transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Resize((img_size, img_size)),
-                # transforms.CenterCrop((img_size, img_size)),
-                transforms.Normalize(mean=[0.456, 0.456, 0.456], std=[0.224, 0.224, 0.224]),
-                transforms.RandomVerticalFlip(0.5),
-                transforms.RandomHorizontalFlip(0.5),
-            ])
-        else:
-            self.trans = transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Resize((img_size, img_size)),
-                transforms.Normalize(mean=[0.456, 0.456, 0.456], std=[0.224, 0.224, 0.224])
-            ])
+        self.trans_coarse = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Resize((img_size, img_size)),
+            transforms.Normalize(mean=[0.456], std=[0.224]),
+            transforms.RandomVerticalFlip(0.5),
+            transforms.RandomHorizontalFlip(0.5),
+        ])
+        self.trans_fine = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Resize((img_size*4, img_size*4)),
+            transforms.CenterCrop((img_size, img_size)),
+            transforms.Normalize(mean=[0.456], std=[0.224]),
+            transforms.RandomVerticalFlip(0.5),
+            transforms.RandomHorizontalFlip(0.5),
+        ])
 
     def __getitem__(self, index):
         label = np.array(self.labels[index])
@@ -57,8 +101,9 @@ class DSet(Dataset):
         img = Image.open(os.path.join(root_path, f'{self.pic_ids[index]}_green.png')).convert('RGB')
         label_tensor = np.zeros((19, ))
         label_tensor[label] = 1
-        img_tensor = self.trans(img)
-        return label_tensor, img_tensor
+        img_tensor_coarse = self.trans_coarse(img)
+        img_tensor_fine = self.trans_fine(img)
+        return label_tensor, img_tensor_coarse, img_tensor_fine
 
     def __len__(self):
         return len(self.labels)
@@ -70,7 +115,7 @@ with open(log_path, 'a', encoding='utf-8') as logfile:
 
     root_path = 'I:/datasets/kaggle/human-protein-atlas/train'
     cpath = 'data/train.csv'
-    batch_size = 4
+    batch_size = 12
     img_size = 256
     seed = 30
 
@@ -79,33 +124,7 @@ with open(log_path, 'a', encoding='utf-8') as logfile:
     random.shuffle(train_ids)
     dev_ids = train_ids[:len(test_ids)]
 
-    tinp = torch.zeros((1, 3, img_size, img_size))
-
-    # densenet = models.resnet50(pretrained=True)
-    # densenet.conv1 = nn.Conv2d(1, 64, (7, 7), (2, 2), (3, 3), bias=False)   # change input channel to 1
-    # densenet = models.densenet121(pretrained=True)
-    # densenet.features[0] = nn.Conv2d(1, 64, (7, 7), (2, 2), (3, 3), bias=False)   # change input channel to 1
-    densenet = EfficientNet.from_pretrained('efficientnet-b5')
-    layer_list = []
-    for layer in densenet.children():
-        if type(layer) is not nn.ModuleList:
-            layer_list.append(layer)
-        else:
-            for sub_layer in layer:
-                layer_list.append(sub_layer)
-    layer_list = layer_list[:-3]
-    backbone = nn.Sequential(*layer_list)
-    tout = backbone(tinp)
-    hidden_size = tout.shape[1]
-
-    net = nn.Sequential(
-        *backbone.children(),
-        nn.AdaptiveAvgPool2d((1, 1)),
-        nn.Flatten(1),
-        nn.Linear(hidden_size, 19),
-        nn.Sigmoid(),
-    )
-
+    net = Model()
     net = net.cuda()
     net.train()
 
@@ -131,10 +150,10 @@ with open(log_path, 'a', encoding='utf-8') as logfile:
     batch_num_test = len(dataset_test.labels) // batch_size
 
     for e in range(50):
-        for idx, (l, b) in enumerate(dataloader_train):
-            l, b = l.float().cuda(), b.cuda()
+        for idx, (l, b_c, b_f) in enumerate(dataloader_train):
+            l, b_c, b_f = l.float().cuda(), b_c.cuda(), b_f.cuda()
             optimizer.zero_grad()
-            p = net(b.cuda())
+            p = net(b_c, b_f)
             loss = criterion(p, l)
             loss.backward()
             optimizer.step()
@@ -142,15 +161,15 @@ with open(log_path, 'a', encoding='utf-8') as logfile:
             print(f'epoch={e}, lr={optimizer.param_groups[0].get("lr")}, batch={idx}/{batch_num}, loss={loss.data.item()}')
             sys.stdout = logfile
             print(f'epoch={e}, lr={optimizer.param_groups[0].get("lr")}, batch={idx}/{batch_num}, loss={loss.data.item()}')
-        torch.save(net, f'ckpt/checkpoints-efficientnet/model.efficientnet.b5.{e}.pkl')
+        torch.save(net, f'ckpt/checkpoints-siamease/model.siamease.two.{e}.pkl')
 
         scheduler.step()
         # optimizer.step()
 
         ll, pp = [], []
-        for idx, (l, b) in enumerate(dataloader_dev):
-            l, b = l.float().cuda(), b.cuda()
-            p = net(b)
+        for idx, (l, b_c, b_f) in enumerate(dataloader_dev):
+            l, b_c, b_f = l.float().cuda(), b_c.cuda(), b_f.cuda()
+            p = net(b_c, b_f)
             l_idx = l.cpu().detach().numpy()
             p_idx = p.cpu().detach().numpy()
             l_ = [[i for i, v in enumerate(t) if v > 0.5] for t in l_idx]
@@ -168,9 +187,9 @@ with open(log_path, 'a', encoding='utf-8') as logfile:
         print(f'epoch={e} dev final f1 score on test set ({dataloader_dev.__len__()}): {f1_score(ll, pp)}')
 
         ll, pp = [], []
-        for idx, (l, b) in enumerate(dataloader_test):
-            l, b = l.float().cuda(), b.cuda()
-            p = net(b)
+        for idx, (l, b_c, b_f) in enumerate(dataloader_test):
+            l, b_c, b_f = l.float().cuda(), b_c.cuda(), b_f.cuda()
+            p = net(b_c, b_f)
             l_idx = l.cpu().detach().numpy()
             p_idx = p.cpu().detach().numpy()
             l_ = [[i for i, v in enumerate(t) if v > 0.5] for t in l_idx]
